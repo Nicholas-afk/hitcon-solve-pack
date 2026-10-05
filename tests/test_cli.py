@@ -10,6 +10,20 @@ def cli(*args):return subprocess.run([sys.executable,'-m','solvepack',*map(str,a
 
 
 class CliTests(unittest.TestCase):
+    def test_receipt_command_retains_synthetic_manual_evidence_after_restart(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory).resolve();(root/'solve.py').write_text("print('hitcon{synthetic_cli}')")
+            self.assertEqual(cli('init',root,'--challenge','synthetic-cli','--solver','solve.py','--synthetic').returncode,0)
+            run=json.loads(cli('capture',root).stdout)
+            (root/'receipt.txt').write_text('SYNTHETIC RECEIPT — NOT ORGANIZER ACCEPTANCE')
+            outcome=cli('receipt',root,run['id'],'--candidate','hitcon{synthetic_cli}','--state','accepted',
+                        '--official-time','2026-10-24T00:00:00Z','--source','Synthetic fixture','--evidence','receipt.txt')
+            self.assertEqual(outcome.returncode,0,outcome.stderr)
+            shown=json.loads(cli('show',root,run['id']).stdout)
+            self.assertEqual(shown['receipt_history'][0]['state'],'accepted')
+            self.assertTrue(shown['receipt_history'][0]['evidence_valid'])
+            self.assertIn('Synthetic',shown['acceptance_note'])
+
     def test_init_capture_replay_show_spaces_and_meaningful_exit_codes(self):
         with tempfile.TemporaryDirectory(prefix='private solve ') as directory:
             root=Path(directory).resolve();(root/'solve.py').write_text("import sys;assert sys.argv[1]=='';print('hitcon{synthetic_cli}')")

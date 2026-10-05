@@ -26,6 +26,10 @@ def parser():
     rep.add_argument('root',type=Path);rep.add_argument('run_id')
     view=commands.add_parser('show',help='Read validated run evidence and separate receipt history')
     view.add_argument('root',type=Path);view.add_argument('run_id');view.add_argument('--full',action='store_true')
+    receipt=commands.add_parser('receipt',help='Attach manual response evidence; never infer acceptance')
+    receipt.add_argument('root',type=Path);receipt.add_argument('run_id');receipt.add_argument('--candidate',required=True)
+    receipt.add_argument('--state',required=True,choices=['attempted','accepted','rejected']);receipt.add_argument('--official-time')
+    receipt.add_argument('--source');receipt.add_argument('--evidence');receipt.add_argument('--points',type=int)
     return command
 
 
@@ -43,6 +47,10 @@ def main(argv=None):
                  'dependencies':args.dependency,'category':args.category,'synthetic':args.synthetic}
             validate_manifest(root,raw);atomic_json(root/'challenge.json',raw,exclusive=True)
             print(json.dumps({'manifest':str(root/'challenge.json'),'synthetic':args.synthetic}));return 0
+        if args.command=='receipt':
+            from .receipts import record_receipt
+            entry=record_receipt(args.root,args.run_id,args.candidate,args.state,args.official_time,args.source,args.evidence,args.points)
+            print(json.dumps(entry,indent=2));return 0
         if args.command=='capture':result=capture(args.root,args.timeout)
         elif args.command=='replay':result=replay(args.root,args.run_id)
         else:result=show(args.root,args.run_id)

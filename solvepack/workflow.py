@@ -105,5 +105,9 @@ def replay(root: Path,baseline_id: str):
 
 
 def show(root: Path,run_id: str):
-    record=load_run(Path(root).resolve(strict=True),run_id)
-    return {**record,'receipt_history':[],'acceptance_note':'No organizer acceptance recorded.'}
+    from .receipts import receipt_history
+    root=Path(root).resolve(strict=True);record=load_run(root,run_id);history=receipt_history(root,record)
+    note='No organizer acceptance recorded.'
+    if history:
+        note='Synthetic receipt history — not organizer acceptance.' if record['synthetic'] else 'Manually recorded receipt history; organizer response authenticity is unverified.'
+    return {**record,'receipt_history':history,'acceptance_note':note}
