@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.solvepack/
+.superpowers/
+.DS_Store
+private-challenges/
