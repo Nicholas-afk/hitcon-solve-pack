@@ -10,6 +10,8 @@ class Element {
   replaceChildren(...children){this.text='';this.children=children;}
   setAttribute(name,value){this[name]=value;}getAttribute(name){return this[name];}addEventListener(name,handler){this.listeners.set(name,handler);}
   focus(){globalThis.document.activeElement=this;}
+  set disabled(value){this.disabledValue=value;if(value && globalThis.document?.activeElement===this)globalThis.document.activeElement=globalThis.document.body;}
+  get disabled(){return this.disabledValue;}
   click(){return this.listeners.get('click')?.({target:this});}
 }
 test('actual localhost refresh opens real records, preserves selection, recovers errors and handles a genuinely empty workspace',async()=>{
@@ -17,13 +19,14 @@ test('actual localhost refresh opens real records, preserves selection, recovers
   const elements=new Map([...html.matchAll(/id="([^"]+)"/g)].map(match=>[match[1],new Element()]));
   elements.get('local-capability').content='test-ephemeral-capability';
   let reloads=0;globalThis.location={hostname:'127.0.0.1',reload:()=>reloads++};
-  globalThis.document={getElementById:id=>elements.get(id),createElement:tag=>new Element(tag),querySelectorAll:()=>[]};
+  const body=new Element('body');globalThis.document={body,activeElement:body,getElementById:id=>elements.get(id),createElement:tag=>new Element(tag),querySelectorAll:()=>[elements.get('refresh-local')]};
   const demo=JSON.parse(await readFile(new URL('../docs/demo.json',import.meta.url),'utf8'));
   const local=structuredClone(demo);local.report_type='solvepack-local';local.synthetic=false;local.records=local.records.slice(0,2);
   for(const row of local.records){row.synthetic=false;row.issues=[];row.problem=null;row.receipts=[];row.output.encoding='base64';for(const stream of ['stdout','stderr'])row.output[stream]=Buffer.from(row.output[stream]).toString('base64');}
-  let response=local,failed=false,reopen=false;
+  let response=local,failed=false,reopen=false,beforeReply;
   globalThis.fetch=async(path,options)=>{
     assert.equal(path,'./private-report.json');assert.equal(options.headers['X-SolvePack-Capability'],'test-ephemeral-capability');
+    if(beforeReply)await beforeReply();
     const raw=JSON.stringify(failed?{error:reopen?'Reload the local viewer after restarting review.':'Workspace temporarily unavailable.',...(reopen?{code:'REOPEN_REQUIRED'}:{})}:response);
     return {ok:!failed,status:failed?409:200,headers:{get:()=>String(raw.length)},text:async()=>raw};
   };
@@ -39,13 +42,17 @@ test('actual localhost refresh opens real records, preserves selection, recovers
   assert.equal(globalThis.document.activeElement,replaced,'record activation must preserve focus on the replacement button');
   assert.equal(replaced['aria-current'],'true');
   await elements.get('run-list').children[0].children[2].click();
-  await elements.get('refresh-local').click();assert.equal(elements.get('verdict-title').textContent,'Replay output matched');
+  elements.get('refresh-local').focus();await elements.get('refresh-local').click();assert.equal(elements.get('verdict-title').textContent,'Replay output matched');
+  assert.equal(globalThis.document.activeElement,elements.get('refresh-local'),'refresh success returns focus when disabling lost it');
   failed=true;await elements.get('refresh-local').click();assert.match(elements.get('report-error').textContent,/Workspace temporarily unavailable/);
+  assert.equal(globalThis.document.activeElement,elements.get('refresh-local'),'refresh failure also returns focus');
   assert.equal(elements.get('verdict-title').textContent,'Replay output matched');
   reopen=true;await elements.get('refresh-local').click();
   const reload=elements.get('report-error').children.find(child=>child.textContent==='Reload local viewer');
   assert.ok(reload,'an expired server capability requires a reload, not an ineffective retry');
   await reload.click();assert.equal(reloads,1);reopen=false;
+  failed=false;beforeReply=async()=>elements.get('stdout').focus();elements.get('refresh-local').focus();
+  await elements.get('refresh-local').click();assert.equal(globalThis.document.activeElement,elements.get('stdout'),'refresh does not steal deliberate focus movement');beforeReply=undefined;
   failed=false;response={...local,records:[]};await elements.get('refresh-local').click();
   assert.equal(elements.get('workspace').hidden,true);assert.match(elements.get('empty-title').textContent,/No saved runs/);
   response=local;await elements.get('refresh-local').click();assert.equal(elements.get('workspace').hidden,false);

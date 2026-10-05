@@ -61,13 +61,16 @@ async function openReport(read, isBundled, fromWorkspace = false) {
 }
 
 async function refreshLocal() {
-  return openReport(async()=>{
+  const origin=$('refresh-local'), restoreFocus=document.activeElement===origin;
+  try {return await openReport(async()=>{
     const response=await fetch('./private-report.json',{cache:'no-store',headers:{'X-SolvePack-Capability':capability}});
     if (Number(response.headers.get('content-length'))>MAX_REPORT_BYTES) throw new Error('Report exceeds the 2 MiB limit. Use a smaller review --limit or show --full.');
     const source=await response.text();
     if (!response.ok) {let detail;try{detail=JSON.parse(source);}catch{}const failure=new Error(detail?.error || `Workspace could not be loaded (HTTP ${response.status}).`);failure.code=detail?.code;throw failure;}
     return source;
-  },false,true);
+  },false,true);} finally {
+    if (restoreFocus && document.activeElement===document.body) origin.focus();
+  }
 }
 $('refresh-local').addEventListener('click',refreshLocal);
 if (localMode) {$('refresh-local').hidden=false;refreshLocal();}
@@ -172,6 +175,7 @@ function renderRecord() {
 const shortHash = hash => hash === null ? 'Unavailable' : hash.slice(0, 14) + '…' + hash.slice(-10);
 function hashLine(label, hash) {const div=node('div','full-hash',label); div.append(node('code','',hash === null ? 'Unavailable' : hash)); return div;}
 function renderFiles(focusPath) {
+  const active=document.activeElement;
   let focusTarget;
   $('files').replaceChildren();
   for (const file of selected.files) {
@@ -192,7 +196,9 @@ function renderFiles(focusPath) {
       const cell=node('div','hash-cell');cell.append(node('span','hash-label',label),node('code','',shortHash(value)));pair.append(cell);
     }
     row.append(pair, node('p',file.baseline_sha256 && file.baseline_sha256 === file.observed_sha256 ? 'file-comparison' : 'file-comparison changed',!file.baseline_sha256 || !file.observed_sha256 ? 'File evidence unavailable — review provenance' : file.baseline_sha256 === file.observed_sha256 ? 'Recorded bytes match' : 'Recorded bytes differ — review this change'));
-    const full=node('details','hash-details'); full.append(node('summary','',`Full hashes for ${file.path}`),hashLine('Captured',file.baseline_sha256),hashLine('Recorded',file.observed_sha256));row.append(full);
+    const full=node('details','hash-details'), summary=node('summary','',`Full hashes for ${file.path}`);
+    if (active?.tagName?.toLowerCase()==='summary' && active.textContent===summary.textContent) {focusTarget=summary;full.open=Boolean(active.parentElement?.open);}
+    full.append(summary,hashLine('Captured',file.baseline_sha256),hashLine('Recorded',file.observed_sha256));row.append(full);
     const checked=checks.get(file.path);
     if(checked){const result=node('div','file-result');result.dataset.tone=checked.error?'error':checked.matches?'matched':'attention';result.append(node('strong','',checked.error?'File check failed':checked.matches?'Current file matches':'Current file differs'),node('p','',`${checked.name} → ${file.path}${checked.error?' · '+checked.error:''}`));if(checked.hash)result.append(node('code','',checked.hash));row.append(result);}
     $('files').append(row);
@@ -228,7 +234,7 @@ $('current-input').addEventListener('change', async event => {
     lastCheck={...result,name:file.name,path:target.file.path};checks.set(target.file.path,lastCheck);
     renderVerdict();announce(`${result.matches?'Current file matches':'Current file differs'}. Only ${target.file.path} checked.`);
   }catch(caught){if(gate.isCurrent(target.token)){lastCheck={name:file.name,path:target.file.path,error:caught.message || 'The file could not be read.'};checks.set(target.file.path,lastCheck);renderVerdict();announce(lastCheck.error);}}
-  finally{if(gate.isCurrent(target.token)){busy();renderFiles(target.file.path);}}
+  finally{if(gate.isCurrent(target.token)){busy();renderFiles(document.activeElement===document.body?target.file.path:undefined);}}
 });
 
 function renderDetails() {

@@ -9,7 +9,8 @@ class Element {
   get textContent() { return (this.text || '') + this.children.map(child => child.textContent).join(''); }
   append(...children) { this.children.push(...children); }
   prepend(...children) { this.children.unshift(...children); }
-  replaceChildren(...children) { this.text = ''; this.children = children; }
+  contains(element) { return this===element || this.children.some(child=>child.contains(element)); }
+  replaceChildren(...children) { if(this.children.some(child=>child.contains(globalThis.document?.activeElement)))globalThis.document.activeElement=globalThis.document.body;this.text = ''; this.children = children; }
   setAttribute(name, value) { this[name] = value; }
   focus() { globalThis.document.activeElement = this; }
   addEventListener(name, handler) { this.listeners.set(name, handler); }
@@ -20,7 +21,7 @@ class Element {
 test('actual file-check handlers invalidate previous success during a replacement and expose its failure', async () => {
   const html = await readFile(new URL('../docs/index.html', import.meta.url), 'utf8');
   const elements = new Map([...html.matchAll(/id="([^"]+)"/g)].map(match => [match[1], new Element()]));
-  globalThis.document = {getElementById: id => elements.get(id), createElement: tag => new Element(tag), querySelectorAll: () => []};
+  const body=new Element('body');globalThis.document = {body,activeElement:body,getElementById: id => elements.get(id), createElement: tag => new Element(tag), querySelectorAll: () => []};
   const raw = await readFile(new URL('../docs/demo.json', import.meta.url), 'utf8');
   globalThis.fetch = async () => ({ok: true, headers: {get: () => String(raw.length)}, text: async () => raw});
   await import('../docs/app.mjs');
@@ -44,7 +45,18 @@ test('actual file-check handlers invalidate previous success during a replacemen
   const reading = check({name: 'unreadable.json', size: 10, arrayBuffer: () => new Promise((_, reject) => {rejectRead = reject;})});
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(elements.get('verdict-title').textContent, 'Checking current file');
+  elements.get('stdout').focus();
   rejectRead(new Error('Read failed.')); await reading;
   assert.equal(elements.get('verdict-title').textContent, 'File check failed');
   assert.match(elements.get('verdict-reason').textContent, /unreadable\.json.*Read failed/);
+  assert.equal(globalThis.document.activeElement,elements.get('stdout'),'completion respects deliberate focus movement during the read');
+  let resolveRead;
+  const slowCheck=check({name:'input.json',size:bytes.length,arrayBuffer:()=>new Promise(resolve=>{resolveRead=resolve;})});
+  await new Promise(resolve=>setImmediate(resolve));
+  const details=elements.get('files').children[0].children.find(child=>child.tagName==='details');
+  details.open=true;details.children[0].parentElement=details;details.children[0].focus();
+  resolveRead(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength));await slowCheck;
+  const replacementDetails=elements.get('files').children[0].children.find(child=>child.tagName==='details');
+  assert.equal(globalThis.document.activeElement,replacementDetails.children[0],'a focused hash disclosure remains the active disclosure');
+  assert.equal(replacementDetails.open,true,'preserve the focused disclosure state');
 });
