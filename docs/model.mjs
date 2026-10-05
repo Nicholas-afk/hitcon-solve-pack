@@ -143,3 +143,16 @@ export async function checkFile(file, expectedHash) {
   const value = await sha256(bytes);
   return {hash: value, matches: value === expectedHash};
 }
+
+export function createSelectionGate() {
+  let generation = 0;
+  return {next: () => ++generation, isCurrent: token => token === generation};
+}
+
+export function viewVerdict(report, record, currentFile) {
+  const status = recordStatus(report, record);
+  if (!currentFile || !['REPRODUCED', 'CAPTURED'].includes(status.code)) return status;
+  return {code: currentFile.matches ? 'MATCH' : 'STALE',
+    title: currentFile.matches ? 'Current file matches' : 'Current file differs',
+    reason: `${currentFile.name} ${currentFile.matches ? 'matches' : 'does not match'} the captured hash for ${currentFile.path}. Only this file was checked here; a complete local replay is still needed.`};
+}

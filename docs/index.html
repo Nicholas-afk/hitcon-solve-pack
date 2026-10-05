@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Review synthetic solve evidence and compare current file bytes locally.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <title>Solve Pack · Evidence review</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.mjs"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to evidence</a>
+  <header class="header page-width">
+    <div class="identity"><a href="./" class="wordmark">Solve Pack<span aria-hidden="true"> /</span></a><span class="context">HITCON preparation</span></div>
+    <button class="button secondary" id="open-report">Open report file</button>
+  </header>
+  <div class="page-width">
+    <div id="notice" class="notice" role="status" hidden></div>
+    <div id="report-error" class="error-message" role="alert" hidden></div>
+    <main id="main" tabindex="-1">
+      <section id="empty" class="empty" aria-labelledby="empty-title">
+        <div class="intro">
+          <p class="eyebrow">A small desk for solve evidence</p>
+          <h1 id="empty-title">Review a solve record.</h1>
+          <p class="lead">See what ran, compare the files, and find out what needs another look.</p>
+          <button class="button primary" id="open-example">Open worked example <span aria-hidden="true">→</span></button>
+          <p class="small intro-note">Self-generated practice data. No real contest flags.</p>
+        </div>
+        <ol class="workflow" aria-label="What you can do">
+          <li><span class="step-number">01</span><div><h2>Read the recorded result</h2><p>Follow the outcome back to the solver’s output.</p></div></li>
+          <li><span class="step-number">02</span><div><h2>Check a current file</h2><p>Compare its bytes with the captured SHA-256 hash.</p></div></li>
+          <li><span class="step-number">03</span><div><h2>Keep the conclusion precise</h2><p>A local match does not establish organizer acceptance.</p></div></li>
+        </ol>
+        <div class="empty-footer"><p>Have a report? Use <strong>Open report file</strong> above.</p><p>Only reports explicitly marked synthetic. Up to 2 MiB. Files stay in this browser.</p></div>
+      </section>
+      <div id="workspace" class="workspace" hidden>
+        <aside class="rail" aria-label="Solve records">
+          <div class="rail-heading"><h2>Run records</h2><span id="record-count" class="small"></span></div>
+          <div id="run-list"></div>
+          <p class="rail-note small">Synthetic examples<br>Local evidence only</p>
+          <button id="reopen-example" class="text-button">Reload worked example</button>
+        </aside>
+        <div class="mobile-select"><label for="run-select">Run record</label><select id="run-select"></select></div>
+        <article id="evidence" aria-labelledby="challenge-title">
+          <div class="document-top"><p class="eyebrow" id="record-meta"></p><span class="synthetic-label">Synthetic evidence</span></div>
+          <h1 id="challenge-title"></h1>
+          <div class="verdict" id="verdict">
+            <div class="status-mark" aria-hidden="true"></div>
+            <div><h2 id="verdict-title"></h2><p id="verdict-reason"></p><p id="recorded-result" class="small" hidden></p></div>
+          </div>
+          <div class="next-action"><a href="#file-checks" class="button primary">Check a current file <span aria-hidden="true">↓</span></a><p>Compare one file here. <br>Run a complete replay in your local tools.</p></div>
+          <section class="section" aria-labelledby="output-title">
+            <div class="section-heading"><h2 id="output-title">Captured output</h2><span id="exit-summary" class="small mono"></span></div>
+            <div id="candidate-list" class="candidates"></div>
+            <div class="output"><div class="output-label">stdout</div><pre id="stdout" tabindex="0" aria-label="Standard output"></pre><div id="stderr-region" hidden><div class="output-label stderr-label">stderr</div><pre id="stderr" tabindex="0" aria-label="Standard error"></pre></div></div>
+            <p class="small muted output-note">Flag-shaped text is a candidate, not a correctness check.</p>
+          </section>
+          <section class="section" id="file-checks" aria-labelledby="files-title">
+            <div class="section-heading"><h2 id="files-title">Declared files</h2><span class="small muted">SHA-256</span></div>
+            <p class="section-copy">Captured and recorded hashes are shown below. Choose a current file to compare its actual bytes; nothing is uploaded.</p>
+            <div id="files"></div>
+            <details id="example-downloads" class="downloads"><summary>Get the files for this example</summary><p>Try the original input, then the changed input. The changed file has one modified parameter.</p><div id="download-links"></div></details>
+          </section>
+          <section class="section provenance" aria-labelledby="details-title">
+            <h2 id="details-title">Run details</h2>
+            <dl id="run-details"></dl>
+            <details class="hash-details"><summary>Full output hashes</summary><div id="output-hashes"></div></details>
+          </section>
+          <section class="acceptance section" aria-labelledby="acceptance-title"><h2 id="acceptance-title">Organizer acceptance</h2><p><strong>No organizer receipt.</strong> These are self-generated examples. Recorded replay and file matches do not earn competition points.</p></section>
+        </article>
+      </div>
+    </main>
+    <footer class="footer"><span>Evidence before confidence.</span><span>No uploads · No saved session</span></footer>
+  </div>
+  <input type="file" id="report-input" accept=".json,application/json" hidden aria-label="Synthetic report file">
+  <input type="file" id="current-input" hidden aria-label="Current file to compare">
+  <p class="sr-only" id="announcement" role="status" aria-live="polite" aria-atomic="true"></p>
+  <noscript><p class="page-width">Enable JavaScript to read reports and calculate file hashes. No server-side execution is used.</p></noscript>
+</body>
+</html>
