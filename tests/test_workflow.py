@@ -20,6 +20,20 @@ def make_workspace(root, script="print('hitcon{synthetic_workflow}')", **changes
 
 
 class WorkflowTests(unittest.TestCase):
+    def test_option_like_solver_names_execute_the_hashed_file_instead_of_python_options(self):
+        with tempfile.TemporaryDirectory() as directory:
+            for name in ['-c','-m','-']:
+                with self.subTest(solver=name):
+                    root=make_workspace(Path(directory).resolve()/('option-'+name),"print('hitcon{synthetic_hashed_file}')")
+                    (root/'solve.py').rename(root/name)
+                    raw=json.loads((root/'challenge.json').read_text());raw['solver']=name;raw['args']=["print('hitcon{synthetic_argument_executed}')"]
+                    (root/'challenge.json').write_text(json.dumps(raw))
+                    first=capture(root)
+                    self.assertEqual(first['candidates'],['hitcon{synthetic_hashed_file}'])
+                    self.assertEqual(first['command'][1],'./'+name)
+                    self.assertEqual(replay(root,first['id'])['status'],'REPRODUCED')
+                    self.assertEqual(show(root,first['id'])['status'],'CANDIDATE')
+
     def test_capture_replay_survive_reload_without_replacing_baseline_and_preserve_binary(self):
         with tempfile.TemporaryDirectory(prefix='solve pack ') as directory:
             root=make_workspace(Path(directory).resolve(),"import sys;sys.stdout.buffer.write(b'\\xffhitcon{synthetic_workflow}\\n');sys.stderr.buffer.write(b'\\x80')")

@@ -45,6 +45,8 @@ Manifest fields: `schema_version:1`, `challenge_id`, `solver`, `args`, `inputs`,
 
 Supply actual evidence for real responses. Synthetic sources/files must clearly describe the fixture. Receipt authenticity is unverified: these operator records cannot replace the official platform. Display rechecks attached hashes; changes/missing files warn without rewriting history. Later rejections preserve earlier entries.
 
+Aware receipt times are normalized to UTC. Existing aware ledger/capsule times are normalized for browser display without rewriting the saved history. Option-like solver names are passed as explicit relative paths; pre-fix capsules that treated such names as Python options must be recaptured and cannot establish reproduction.
+
 Exit codes: **0** candidate capture/reproduced replay/valid display, receipt or init; **2** persisted unsuccessful run; **1** invalid input, dependency or storage failure. Help exits 0. Results are JSON; review prints its URL. Failures explain recovery without a traceback. Retry execution explicitly; every capture/replay gets a new ID. Solvers are never retried automatically.
 
 ## Limits and recovery

@@ -63,7 +63,9 @@ def receipt_history(root: Path,run):
                 valid=file_digest(safe_file(root,entry['evidence']['path']))==entry['evidence']['sha256']
                 if not valid:problem='Evidence bytes changed since the receipt was recorded.'
             except (ValueError,OSError) as error:valid=False;problem=str(error)
-        result.append({**entry,'candidate':candidate,'evidence_valid':valid,'evidence_problem':problem})
+        result.append({**entry,'recorded_at':aware_time(entry['recorded_at']),
+                       'official_time':aware_time(entry['official_time']) if entry['official_time'] is not None else None,
+                       'candidate':candidate,'evidence_valid':valid,'evidence_problem':problem})
     return result
 
 
@@ -77,7 +79,7 @@ def record_receipt(root: Path,run_id: str,candidate: str,state: str,official_tim
         proof=None
         if evidence is not None:proof={'path':evidence,'sha256':file_digest(safe_file(root,evidence))}
         entry={'id':uuid.uuid4().hex,'run_id':run_id,'candidate_sha256':digest(candidate.encode('ascii')),'state':state,
-               'recorded_at':datetime.now(timezone.utc).isoformat(),'official_time':official_time,'source':source,
+               'recorded_at':datetime.now(timezone.utc).isoformat(),'official_time':aware_time(official_time,'Official time') if official_time is not None else None,'source':source,
                'evidence':proof,'points':points,'synthetic':run['synthetic']}
         _validate_entry(entry);_bind(entry,run)
         ledger=_ledger(root)

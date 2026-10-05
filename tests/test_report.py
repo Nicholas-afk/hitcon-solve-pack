@@ -9,6 +9,30 @@ from tests.test_workflow import make_workspace
 
 
 class ReportTests(unittest.TestCase):
+    def test_new_receipt_time_is_canonical_utc(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=make_workspace(Path(directory).resolve());run=capture(root);(root/'receipt.txt').write_text('synthetic fixture')
+            entry=record_receipt(root,run['id'],run['candidates'][0],'accepted','2026-10-24 08:00:00+08:00','Synthetic fixture','receipt.txt')
+            self.assertEqual(entry['official_time'],'2026-10-24T00:00:00+00:00')
+
+    def test_existing_aware_times_project_to_a_verifiable_browser_report_without_rewriting_history(self):
+        import json,subprocess
+        from solvepack.store import load_json,atomic_json,capsule_path
+        with tempfile.TemporaryDirectory() as directory:
+            root=make_workspace(Path(directory).resolve());run=capture(root);(root/'receipt.txt').write_text('synthetic fixture')
+            record_receipt(root,run['id'],run['candidates'][0],'accepted','2026-10-24T00:00:00Z','Synthetic fixture','receipt.txt')
+            ledger_path=root/'.solvepack/receipts.json';ledger=load_json(ledger_path)
+            ledger['entries'][0]['official_time']='2026-10-24 08:00:00+08:00'
+            ledger['entries'][0]['recorded_at']='2026-10-24 00:00:00+00:00';atomic_json(ledger_path,ledger);old=ledger_path.read_bytes()
+            path=capsule_path(root,run['id']);raw=load_json(path);raw['created_at']='2026-10-24 00:00:00+00:00';atomic_json(path,raw);old_run=path.read_bytes()
+            report=local_report(root)
+            module=(Path(__file__).resolve().parents[1]/'docs/model.mjs').as_uri()
+            script=f"import {{parseReport,verifyReport}} from {json.dumps(module)};let raw='';for await(const chunk of process.stdin)raw+=chunk;const report=await verifyReport(parseReport(raw,{{allowLocal:true}}),{{allowLocal:true}});console.log(report.records[0].receipts[0].official_time);"
+            result=subprocess.run(['node','--input-type=module','-e',script],input=json.dumps(report),text=True,capture_output=True)
+            self.assertEqual(result.returncode,0,result.stderr)
+            self.assertEqual(result.stdout.strip(),'2026-10-24T00:00:00+00:00')
+            self.assertEqual(ledger_path.read_bytes(),old);self.assertEqual(path.read_bytes(),old_run)
+
     def test_real_private_records_preserve_bytes_issues_and_explicit_synthetic_receipts(self):
         with tempfile.TemporaryDirectory() as directory:
             root=make_workspace(Path(directory).resolve(),"import sys;sys.stdout.buffer.write(b'\\xffhitcon{synthetic_workflow}\\n')")

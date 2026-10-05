@@ -5,7 +5,7 @@ from datetime import datetime,timezone
 from pathlib import Path
 import uuid
 from .capsules import finite, output_bytes, validate_capsule
-from .model import Snapshot, validate_manifest, extract_candidates
+from .model import Snapshot, validate_manifest, extract_candidates, solver_argument
 from .provenance import child_environment, fingerprint, changed_fields, digest
 from .runner import run_solver, RunResult
 from .store import atomic_json, load_json, workspace_lock, capsule_path
@@ -52,7 +52,7 @@ def _manifest(root):
 
 
 def _execute(root,manifest,before,timeout_s,baseline=None,problem=None):
-    command=[] if before is None else [before.runtime['interpreter'],manifest.solver,*manifest.args]
+    command=[] if before is None else [before.runtime['interpreter'],solver_argument(manifest.solver),*manifest.args]
     issues=[]
     if baseline and before:
         issues=changed_fields(Snapshot(**baseline['snapshot_after']),before)

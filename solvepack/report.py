@@ -2,6 +2,7 @@
 from datetime import datetime,timezone
 from pathlib import Path
 from .provenance import json_digest
+from .capsules import aware_time
 from .store import private_store,valid_id
 from .workflow import load_run,show
 
@@ -22,7 +23,7 @@ def _row(run,base,receipts):
         identity=json_digest({'runtime':before['runtime'],'environment':before['environment_sha256'],'directory':run['working_directory']})
         runtime=f'Python {version} / {before["runtime"]["architecture"]} / provenance {identity}'
     row={'id':run['id'],'challenge':run['challenge_id'],'category':run['category'],'kind':run['kind'],
-         'created_at':run['created_at'],'runtime':runtime,'duration_ms':run['elapsed_s']*1000,'timeout_s':run['timeout_s'],
+         'created_at':aware_time(run['created_at']),'runtime':runtime,'duration_ms':run['elapsed_s']*1000,'timeout_s':run['timeout_s'],
          'exit_code':run['exit_code'],'execution_status':run['execution_status'],'command':run['command'],'files':files,
          'output':{'encoding':'base64',**{name:run['output'][name+'_base64'] for name in ('stdout','stderr')},
                    **{name+'_sha256':run['output'][name+'_sha256'] for name in ('stdout','stderr')}},

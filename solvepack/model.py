@@ -42,6 +42,11 @@ def relative_path(relative: str) -> str:
     return relative
 
 
+def solver_argument(relative: str) -> str:
+    """A declared filename must never become Python's -c, -m or stdin option."""
+    return './'+relative if relative.startswith('-') else relative
+
+
 def safe_file(root: Path, relative: str) -> Path:
     relative_path(relative)
     parts=relative.split('/')

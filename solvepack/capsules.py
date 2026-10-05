@@ -1,10 +1,10 @@
 """Independent shape and byte-integrity validation for persisted capsules."""
 import base64
-from datetime import datetime
+from datetime import datetime,timezone
 import math
 from pathlib import Path
 import re
-from .model import fields, text, validate_manifest, extract_candidates
+from .model import fields, text, validate_manifest, extract_candidates, solver_argument
 from .provenance import digest
 
 HASH=re.compile(r'[a-f0-9]{64}')
@@ -17,8 +17,8 @@ def aware_time(value, label='Timestamp') -> str:
     try:
         instant=datetime.fromisoformat(value.replace('Z','+00:00'))
         if instant.utcoffset() is None: raise ValueError()
-    except ValueError as error: raise ValueError(f'{label} must be an ISO timestamp with a timezone.') from error
-    return value
+        return instant.astimezone(timezone.utc).isoformat()
+    except (ValueError,OverflowError) as error: raise ValueError(f'{label} must be an ISO timestamp with a timezone and representable UTC instant.') from error
 
 
 def finite(value,label,low=0,high=3600):
@@ -79,7 +79,7 @@ def validate_capsule(record):
     for name in ('snapshot_before','snapshot_after'):
         if record[name] is not None:snapshot(record[name],manifest)
     before=record['snapshot_before']
-    expected=[] if before is None else [before['runtime']['interpreter'],manifest.solver,*manifest.args]
+    expected=[] if before is None else [before['runtime']['interpreter'],solver_argument(manifest.solver),*manifest.args]
     if record['command']!=expected:raise ValueError('Stored command disagrees with the declared manifest/runtime.')
     if before is None and (record['kind']!='replay' or execution!='NOT_RUN'):raise ValueError('Executed capsule requires pre-run provenance.')
     if record['problem'] is not None:text(record['problem'],'Recorded problem',4096)
