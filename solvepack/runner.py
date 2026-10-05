@@ -39,8 +39,8 @@ def run_solver(argv: list[str], cwd: Path, env: dict[str, str],
         raise ValueError('Timeout must be finite, positive and at most 3600 seconds.')
     if type(max_output_bytes) is not int or not 0 < max_output_bytes <= 1048576:
         raise ValueError('Output limit must be an integer from 1 to 1048576 bytes.')
-    if not argv or not all(isinstance(arg, str) and arg for arg in argv):
-        raise ValueError('argv must contain literal nonempty strings.')
+    if not argv or not argv[0] or not all(isinstance(arg, str) and '\0' not in arg for arg in argv):
+        raise ValueError('argv must contain literal strings without NUL and a nonempty executable.')
     started = time.monotonic()
     try:
         process = subprocess.Popen(argv, cwd=cwd, env=env, stdin=subprocess.DEVNULL,
