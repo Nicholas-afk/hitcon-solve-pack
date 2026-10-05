@@ -31,7 +31,10 @@ def json_digest(value) -> str:
 
 def fingerprint(root: Path, manifest: Manifest) -> Snapshot:
     files={path:file_digest(safe_file(root,path)) for path in ['challenge.json',manifest.solver,*manifest.inputs]}
-    executable=Path(sys.executable).resolve(strict=True)
+    launcher=Path(sys.executable).absolute()
+    # Resolving a venv's final symlink launches the base runtime, losing its
+    # package search path. Hash the actual binary but retain the venv launcher.
+    executable=launcher if sys.prefix!=sys.base_prefix else launcher.resolve(strict=True)
     packages={}
     for name in manifest.dependencies:
         try: packages[name]=importlib.metadata.version(name)

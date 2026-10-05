@@ -35,7 +35,9 @@ def _row(run,base,receipts):
 def local_report(root: Path,limit=16):
     if type(limit) is not int or not 1<=limit<=64:raise ValueError('Review limit must be 1–64 recent runs.')
     root=Path(root).resolve(strict=True)
-    report={'schema_version':1,'report_type':'solvepack-local','synthetic':False,'title':'Local workspace: '+root.name[:200],
+    location=str(root)
+    if len(location)>230:location='…'+location[-229:]
+    report={'schema_version':1,'report_type':'solvepack-local','synthetic':False,'title':'Local workspace: '+location,
             'generated_at':datetime.now(timezone.utc).isoformat(),'records':[]}
     if not (root/'.solvepack').exists() and not (root/'.solvepack').is_symlink():return report
     paths=list((private_store(root)/'capsules').glob('*.json'))

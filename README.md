@@ -35,6 +35,8 @@ Repeat `--arg`, `--input` and `--dependency` as needed. `--arg=` passes an empty
 
 Manifest fields: `schema_version:1`, `challenge_id`, `solver`, `args`, `inputs`, `dependencies`, optional `category` and `synthetic`. Paths stay relative and cannot traverse, follow symlinks or reference reserved storage. Hashes cover raw manifest, solver and declared inputs. Declare all resources: undeclared files, network state and system libraries are outside the reproduction boundary.
 
+For a solver with packages in a virtual environment, invoke Solve Pack with that environment's Python, for example `/absolute/runtime/bin/python -m solvepack capture /absolute/private/challenge` from this package. Capture and replay retain its launcher so the solver uses the same environment whose declared package versions were recorded. Missing packages fail explicitly. Pre-fix captures that launched the base interpreter from a virtual environment must be recaptured; they cannot establish that the environment's solver was reproduced. The core still needs no third-party package.
+
 ## Commands and manual receipts
 
 - `capture ROOT [--timeout SECONDS]`: execute current manifest, snapshot before/after, save new evidence.
@@ -61,6 +63,8 @@ Private directories/files use 0700/0600. Mutations acquire an exclusive lock. A 
 
 Local server binds `127.0.0.1`, rejects foreign Host/Origin/cross-site requests, and requires an ephemeral random capability for private reports. Runtime HTML receives the token; source/Git/public bundles never do. Routes are fixed: no CORS, uploads, execution, writes or arbitrary private-file access. Child environment variables are allowlisted and inherited API credentials excluded. Trusted solvers still have your local account's privileges.
 
+The private viewer shows its workspace path (very long paths are explicitly abbreviated), the selected run's time in UTC and short ID, and each run's time beside selection. Narrow selectors start with the result. Refresh preserves the selected record when it remains in the report. Errors retain its verified identity and evidence. These times describe local recording, not organizer submissions.
+
 Synthetic-only static preview:
 
 ```sh
@@ -76,4 +80,4 @@ python3 tools/check.py
 python3 -m solvepack.demo_report
 ```
 
-Checks cover processing, binary/literal execution, limits/cleanup, before/after drift, persistence/tamper/atomic failures, receipt integrity, private HTTP boundaries, browser verification and actual event handlers. Desktop/mobile/320px inspections supplement them. Other runtimes, full accessibility, human speed, past-problem throughput and competitive acceptance remain unverified. Use `QUEUE_TEMPLATE.md` for honest timed evaluation. Rebuilding the public report updates observed synthetic times, not real contest evidence.
+Checks cover processing, binary/literal execution, real virtual-environment package execution, limits/cleanup, before/after drift, persistence/tamper/atomic failures, receipt integrity, private HTTP boundaries, browser verification and actual event handlers. Desktop/mobile/320px inspections supplement them. Two selected HITCON 2022 crypto problems were reproduced privately using consulted author methods; automated checks preserved their output through capture/replay. This is guided historical reproduction, not blind solving, entrant performance or official acceptance. Other runtimes, full accessibility, human speed and competitive throughput remain unverified. Use `QUEUE_TEMPLATE.md` for honest timed evaluation. Rebuilding the public report updates observed synthetic times, not real contest evidence.

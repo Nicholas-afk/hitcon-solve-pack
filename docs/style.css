@@ -10,3 +10,6 @@ summary{overflow-wrap:anywhere}
 .header-actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-end}.receipt-row{padding:16px 0;border-bottom:1px solid var(--rule);overflow-wrap:anywhere}.receipt-row .changed{color:var(--error);font-weight:600}
 @media(max-width:760px){.header{flex-wrap:wrap;padding-top:16px;padding-bottom:16px;gap:12px}.header-actions{width:100%;justify-content:flex-start}.header-actions .button{flex:1;gap:8px}.synthetic-label{white-space:normal;text-align:right;max-width:120px;flex-shrink:0}}
 @media(max-width:420px){.file-title{flex-direction:column;align-items:stretch}.file-title button{max-width:none;width:100%}}
+.workspace-context{margin-top:16px;font-size:14px;color:var(--secondary);overflow-wrap:anywhere}
+.record-identity{margin-top:12px;color:var(--secondary);overflow-wrap:anywhere}
+.run-button .run-time{font-variant-numeric:tabular-nums;font-size:11px}

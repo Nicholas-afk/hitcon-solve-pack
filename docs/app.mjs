@@ -44,6 +44,8 @@ async function openReport(read, isBundled, fromWorkspace = false) {
     const previous = selected?.id;
     report = next; bundled = isBundled; checks.clear(); lastCheck = null;
     const privateView = report.report_type === 'solvepack-local';
+    $('report-context').textContent = privateView ? report.title : 'Sample report · '+report.title;
+    $('report-context').hidden = false;
     $('rail-note').textContent = privateView ? 'Recent local records and their captures. Up to 64 recent receipts per run. Refresh after CLI actions.' : 'Synthetic examples · Local evidence only';
     $('storage-note').textContent = privateView ? 'Records stored locally · No uploads' : 'No uploads · No saved session';
     if (!report.records.length) {
@@ -115,10 +117,12 @@ function renderRail(keepFocus = false) {
       const button = node('button', 'run-button'); button.type = 'button';
       const caption=(report.report_type==='solvepack-local'?`${record.kind} ${record.id.slice(0,6)} · `:'')+(labels[status.code] || status.title);
       button.append(node('strong', '', record.challenge), node('span','',caption));
-      button.setAttribute('aria-label', `${record.challenge} · ${caption}`);
+      button.append(node('span','run-time',recordedTime(record)));
+      button.setAttribute('aria-label', `${record.challenge} · ${caption} · ${recordedTime(record)}`);
       button.setAttribute('aria-current', String(record === selected));
       button.addEventListener('click', () => selectRecord(record.id,true)); group.append(button);
-      const option = node('option','',`${record.challenge} · ${caption}`); option.value = record.id; option.selected = record === selected; select.append(option);
+      const mobileCaption=(labels[status.code] || status.title)+' · '+record.kind+(report.report_type==='solvepack-local'?' '+record.id.slice(0,6):'')+' · '+recordedTime(record)+' · '+record.challenge;
+      const option = node('option','',mobileCaption); option.value = record.id; option.selected = record === selected; select.append(option);
     }
     list.append(group);
   }
@@ -126,6 +130,10 @@ function renderRail(keepFocus = false) {
     for (const group of list.children) for (const button of group.children)
       if (button.getAttribute?.('aria-current') === 'true') button.focus();
   }
+}
+
+function recordedTime(record) {
+  return new Date(record.created_at).toISOString().slice(0,19).replace('T',' ')+' UTC';
 }
 
 function renderVerdict() {
@@ -139,6 +147,7 @@ function renderVerdict() {
 
 function renderRecord() {
   $('challenge-title').textContent = selected.challenge;
+  $('record-identity').textContent = `Record ${selected.id.slice(0,6)} · ${recordedTime(selected)}`;
   $('record-meta').textContent = `${selected.category} / Recorded ${selected.kind}`;
   $('evidence-label').textContent = selected.synthetic === false ? 'Local operator evidence' : 'Synthetic evidence';
   $('exit-summary').textContent = selected.exit_code === null ? 'No exit code' : `Exit ${selected.exit_code} · ${(selected.duration_ms/1000).toFixed(3)}s`;
@@ -239,7 +248,7 @@ $('current-input').addEventListener('change', async event => {
 
 function renderDetails() {
   const details=$('run-details');details.replaceChildren();
-  for(const [key,value] of [['Record',selected.id],['Captured at',new Date(selected.created_at).toLocaleString()+' (your timezone)'],['Runtime',selected.runtime],['Command',JSON.stringify(selected.command)],['Duration',`${selected.duration_ms.toFixed(3)} ms, observed`],['Deadline',`${selected.timeout_s} seconds`],['Execution',selected.execution_status],['Compared with',selected.baseline_id || 'No earlier capture']]){details.append(node('dt','',key),node('dd',key==='Command'?'mono':'',value));}
+  for(const [key,value] of [['Record',selected.id],['Recorded at',recordedTime(selected)],['Runtime',selected.runtime],['Command',JSON.stringify(selected.command)],['Duration',`${selected.duration_ms.toFixed(3)} ms, observed`],['Deadline',`${selected.timeout_s} seconds`],['Execution',selected.execution_status],['Compared with',selected.baseline_id || 'No earlier capture']]){details.append(node('dt','',key),node('dd',key==='Command'?'mono':'',value));}
   $('output-hashes').replaceChildren(hashLine('stdout',selected.output.stdout_sha256),hashLine('stderr',selected.output.stderr_sha256));
 }
 

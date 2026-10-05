@@ -18,6 +18,7 @@
     <div class="header-actions"><button class="button secondary" id="refresh-local" hidden>Refresh workspace records</button><button class="button secondary" id="open-report">Open sample report</button></div>
   </header>
   <div class="page-width">
+    <p id="report-context" class="workspace-context" hidden></p>
     <div id="notice" class="notice" role="status" hidden></div>
     <div id="report-error" class="error-message" role="alert" hidden></div>
     <main id="main" tabindex="-1">
@@ -47,6 +48,7 @@
         <article id="evidence" aria-labelledby="challenge-title">
           <div class="document-top"><p class="eyebrow" id="record-meta"></p><span id="evidence-label" class="synthetic-label">Synthetic evidence</span></div>
           <h1 id="challenge-title"></h1>
+          <p id="record-identity" class="record-identity small mono"></p>
           <div class="verdict" id="verdict">
             <div class="status-mark" aria-hidden="true"></div>
             <div><h2 id="verdict-title"></h2><p id="verdict-reason"></p><p id="recorded-result" class="small" hidden></p></div>

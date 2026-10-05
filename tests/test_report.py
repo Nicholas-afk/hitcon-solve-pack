@@ -9,6 +9,21 @@ from tests.test_workflow import make_workspace
 
 
 class ReportTests(unittest.TestCase):
+    def test_workspace_title_distinguishes_same_named_folders_and_bounds_long_paths(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory).resolve()
+            a=root/'a'/'practice';b=root/'b'/'practice'
+            a.mkdir(parents=True);b.mkdir(parents=True)
+            self.assertEqual(local_report(a)['title'],'Local workspace: '+str(a))
+            self.assertNotEqual(local_report(a)['title'],local_report(b)['title'])
+            long=root
+            for _ in range(5):long=long/('z'*60)
+            long.mkdir(parents=True)
+            title=local_report(long)['title']
+            self.assertLessEqual(len(title),256)
+            self.assertTrue(title.endswith(str(long)[-229:]))
+            self.assertIn('…',title)
+
     def test_new_receipt_time_is_canonical_utc(self):
         with tempfile.TemporaryDirectory() as directory:
             root=make_workspace(Path(directory).resolve());run=capture(root);(root/'receipt.txt').write_text('synthetic fixture')

@@ -33,11 +33,17 @@ test('actual localhost refresh opens real records, preserves selection, recovers
   await import('../docs/app.mjs');
   for(let index=0;index<40 && !elements.get('challenge-title').textContent;index++)await new Promise(resolve=>setImmediate(resolve));
   assert.equal(elements.get('verdict-title').textContent,'Replay output matched');
+  assert.equal(elements.get('report-context')?.textContent,local.title,'verified workspace identity must be visible');
+  const selectedTime=new Date(local.records[1].created_at).toISOString().slice(0,19).replace('T',' ')+' UTC';
+  assert.equal(elements.get('record-identity')?.textContent,`Record ${local.records[1].id.slice(0,6)} · ${selectedTime}`);
+  assert.match(elements.get('run-select').children[1].textContent,/^Matched replay · replay/,'status precedes long challenge titles in the narrow selector');
   assert.equal(elements.get('evidence-label').textContent,'Local operator evidence');
   assert.match(elements.get('acceptance-body').textContent,/No organizer receipt/);
   const firstRun=elements.get('run-list').children[0].children[1];
   assert.match(firstRun['aria-label'],new RegExp(local.records[0].id.slice(0,6)));
   firstRun.focus();await firstRun.click();
+  const firstTime=new Date(local.records[0].created_at).toISOString().slice(0,19).replace('T',' ')+' UTC';
+  assert.equal(elements.get('record-identity').textContent,`Record ${local.records[0].id.slice(0,6)} · ${firstTime}`,'selection changes the visible identity with the evidence');
   const replaced=elements.get('run-list').children[0].children[1];
   assert.equal(globalThis.document.activeElement,replaced,'record activation must preserve focus on the replacement button');
   assert.equal(replaced['aria-current'],'true');
@@ -45,6 +51,7 @@ test('actual localhost refresh opens real records, preserves selection, recovers
   elements.get('refresh-local').focus();await elements.get('refresh-local').click();assert.equal(elements.get('verdict-title').textContent,'Replay output matched');
   assert.equal(globalThis.document.activeElement,elements.get('refresh-local'),'refresh success returns focus when disabling lost it');
   failed=true;await elements.get('refresh-local').click();assert.match(elements.get('report-error').textContent,/Workspace temporarily unavailable/);
+  assert.equal(elements.get('report-context').textContent,local.title,'failed loads must preserve verified identity');
   assert.equal(globalThis.document.activeElement,elements.get('refresh-local'),'refresh failure also returns focus');
   assert.equal(elements.get('verdict-title').textContent,'Replay output matched');
   reopen=true;await elements.get('refresh-local').click();
@@ -55,5 +62,6 @@ test('actual localhost refresh opens real records, preserves selection, recovers
   await elements.get('refresh-local').click();assert.equal(globalThis.document.activeElement,elements.get('stdout'),'refresh does not steal deliberate focus movement');beforeReply=undefined;
   failed=false;response={...local,records:[]};await elements.get('refresh-local').click();
   assert.equal(elements.get('workspace').hidden,true);assert.match(elements.get('empty-title').textContent,/No saved runs/);
+  assert.equal(elements.get('report-context').textContent,local.title,'empty workspaces still expose the actual workspace');
   response=local;await elements.get('refresh-local').click();assert.equal(elements.get('workspace').hidden,false);
 });
