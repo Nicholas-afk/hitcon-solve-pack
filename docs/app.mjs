@@ -1,7 +1,9 @@
-import {parseReport, verifyReport, recordStatus, viewVerdict, candidateScan, checkFile, createSelectionGate, MAX_REPORT_BYTES} from './model.mjs';
+import {parseReport, verifyReport, recordStatus, viewVerdict, candidateScan, displayOutput, checkFile, createSelectionGate, MAX_REPORT_BYTES} from './model.mjs';
 
 const $ = id => document.getElementById(id);
 const gate = createSelectionGate();
+const capability = $('local-capability')?.content || '';
+const localMode = Boolean(capability && ['127.0.0.1','localhost'].includes(globalThis.location?.hostname));
 let report = null, selected = null, bundled = false, pending = null, lastCheck = null;
 const checks = new Map();
 const tone = code => ['REPRODUCED','MATCH'].includes(code) ? 'matched' : ['FAILED','TIMEOUT','OUTPUT_LIMIT','ERROR','FILE_ERROR'].includes(code) ? 'error' : ['STALE','AMBIGUOUS','DIFFERENT','BLOCKED','NO_CANDIDATE','CANDIDATE_LIMIT'].includes(code) ? 'attention' : 'neutral';
@@ -18,26 +20,37 @@ function busy(message = '') {
   $('notice').hidden = !message;
   $('notice').textContent = message;
   $('main').setAttribute('aria-busy', String(Boolean(message)));
-  document.querySelectorAll('button, select').forEach(control => control.disabled = Boolean(message));
+  document.querySelectorAll('button, select').forEach(control => control.disabled = Boolean(message) || control.dataset.fixedDisabled === 'true');
   if (message) announce(message);
 }
 function error(message) {
-  const box = $('report-error'); box.replaceChildren(node('strong', '', 'Couldn’t open this report'), node('p', '', message + ' Choose another synthetic report or reopen the worked example.'));
+  const box = $('report-error'); box.replaceChildren(node('strong', '', 'Couldn’t open this report'), node('p', '', message + (localMode ? ' Fix the local issue and refresh to retry. Previous verified evidence remains available.' : ' Choose another synthetic report or reopen the worked example.')));
+  if (localMode) {const retry=node('button','button secondary','Retry workspace records');retry.type='button';retry.addEventListener('click',refreshLocal);box.append(retry);}
   const recover = node('button', 'button secondary', 'Open worked example');
   recover.type = 'button'; recover.addEventListener('click', example); box.append(recover);
   box.hidden = false;
 }
 function clearError() { $('report-error').hidden = true; $('report-error').replaceChildren(); }
 
-async function openReport(read, isBundled) {
+async function openReport(read, isBundled, fromWorkspace = false) {
   const token = gate.next(); pending = null;
   busy('Reading report and checking output hashes…'); clearError();
   try {
     const data = await read();
-    const next = await verifyReport(parseReport(data));
+    const options = {allowLocal: fromWorkspace && localMode};
+    const next = await verifyReport(parseReport(data,options),options);
     if (!gate.isCurrent(token)) return;
+    const previous = selected?.id;
     report = next; bundled = isBundled; checks.clear(); lastCheck = null;
-    selected = report.records.find(record => record.id === 'modular-replay') || report.records.find(record => record.kind === 'replay') || report.records[0];
+    const privateView = report.report_type === 'solvepack-local';
+    $('rail-note').textContent = privateView ? 'Recent local records and their captures. Up to 64 recent receipts per run. Refresh after CLI actions.' : 'Synthetic examples · Local evidence only';
+    $('storage-note').textContent = privateView ? 'Records stored locally · No uploads' : 'No uploads · No saved session';
+    if (!report.records.length) {
+      selected=null;$('workspace').hidden=true;$('empty').hidden=false;
+      $('empty-title').textContent='No saved runs yet.';$('empty-description').textContent='Capture a trusted solver from the terminal, then refresh workspace records here.';
+      announce('Local workspace has no saved runs.');return;
+    }
+    selected = (fromWorkspace && report.records.find(record=>record.id===previous)) || (privateView ? report.records.at(-1) : report.records.find(record => record.id === 'modular-replay') || report.records.find(record => record.kind === 'replay') || report.records[0]);
     $('empty').hidden = true; $('workspace').hidden = false;
     renderRail(); renderRecord();
     announce('Report opened. ' + recordStatus(report, selected).title + '.');
@@ -45,6 +58,18 @@ async function openReport(read, isBundled) {
     if (gate.isCurrent(token)) error(caught.message || 'The file could not be read.');
   } finally { if (gate.isCurrent(token)) busy(); }
 }
+
+async function refreshLocal() {
+  return openReport(async()=>{
+    const response=await fetch('./private-report.json',{cache:'no-store',headers:{'X-SolvePack-Capability':capability}});
+    if (Number(response.headers.get('content-length'))>MAX_REPORT_BYTES) throw new Error('Report exceeds the 2 MiB limit. Use a smaller review --limit or show --full.');
+    const source=await response.text();
+    if (!response.ok) {let message;try{message=JSON.parse(source).error;}catch{}throw new Error(message || `Workspace could not be loaded (HTTP ${response.status}).`);}
+    return source;
+  },false,true);
+}
+$('refresh-local').addEventListener('click',refreshLocal);
+if (localMode) {$('refresh-local').hidden=false;refreshLocal();}
 
 function example() {
   return openReport(async () => {
@@ -84,11 +109,12 @@ function renderRail() {
     for (const record of report.records.filter(record => record.category === category)) {
       const status = recordStatus(report, record);
       const button = node('button', 'run-button'); button.type = 'button';
-      button.append(node('strong', '', record.challenge), node('span','',labels[status.code] || status.title));
-      button.setAttribute('aria-label', `${record.challenge} · ${labels[status.code] || status.title}`);
+      const caption=(report.report_type==='solvepack-local'?`${record.kind} ${record.id.slice(0,6)} · `:'')+(labels[status.code] || status.title);
+      button.append(node('strong', '', record.challenge), node('span','',caption));
+      button.setAttribute('aria-label', `${record.challenge} · ${caption}`);
       button.setAttribute('aria-current', String(record === selected));
       button.addEventListener('click', () => selectRecord(record.id)); group.append(button);
-      const option = node('option','',`${record.challenge} · ${labels[status.code] || status.title}`); option.value = record.id; option.selected = record === selected; select.append(option);
+      const option = node('option','',`${record.challenge} · ${caption}`); option.value = record.id; option.selected = record === selected; select.append(option);
     }
     list.append(group);
   }
@@ -106,6 +132,7 @@ function renderVerdict() {
 function renderRecord() {
   $('challenge-title').textContent = selected.challenge;
   $('record-meta').textContent = `${selected.category} / Recorded ${selected.kind}`;
+  $('evidence-label').textContent = selected.synthetic === false ? 'Local operator evidence' : 'Synthetic evidence';
   $('exit-summary').textContent = selected.exit_code === null ? 'No exit code' : `Exit ${selected.exit_code} · ${(selected.duration_ms/1000).toFixed(3)}s`;
   renderVerdict();
   const list = $('candidate-list'); list.replaceChildren();
@@ -130,14 +157,15 @@ function renderRecord() {
   if (found.length && ['FAILED','TIMEOUT','OUTPUT_LIMIT','ERROR'].includes(status.code)) list.prepend(node('p','small muted','Diagnostic candidates — this execution did not succeed.'));
   if (scan.limited) list.append(node('p','small muted','Candidate display limited: up to 32 distinct values, each at most 4096 characters. Inspect the full raw output locally.'));
   if (!found.length) list.append(node('p','small muted',scan.limited?'No candidate fits the display limits.':'No flag-shaped candidate in this output.'));
-  $('stdout').textContent = selected.output.stdout || '(no standard output)';
+  $('stdout').textContent = displayOutput(selected,'stdout') || '(no standard output)';
   $('stderr-region').hidden = !selected.output.stderr;
-  $('stderr').textContent = selected.output.stderr;
-  renderFiles(); renderDetails(); renderDownloads();
+  $('stderr').textContent = displayOutput(selected,'stderr');
+  $('output-note').textContent='Flag-shaped text is a candidate, not a correctness check.'+(selected.output.encoding==='base64'?' Display decoded as UTF-8; invalid bytes appear as �. Hashes verify the original bytes, available in show --full.':'');
+  renderFiles(); renderDetails(); renderDownloads(); renderReceipts();
 }
 
-const shortHash = hash => hash.slice(0, 14) + '…' + hash.slice(-10);
-function hashLine(label, hash) {const div=node('div','full-hash',label); div.append(node('code','',hash)); return div;}
+const shortHash = hash => hash === null ? 'Unavailable' : hash.slice(0, 14) + '…' + hash.slice(-10);
+function hashLine(label, hash) {const div=node('div','full-hash',label); div.append(node('code','',hash === null ? 'Unavailable' : hash)); return div;}
 function renderFiles() {
   $('files').replaceChildren();
   for (const file of selected.files) {
@@ -146,19 +174,38 @@ function renderFiles() {
     name.append(node('code','',file.path), node('span','small',file.role));
     const button = node('button','button secondary',`Check ${file.path}`);
     button.type='button'; button.addEventListener('click', () => {
+      if (!file.baseline_sha256) return;
       pending = {file, record:selected, report, token:gate.next()};
       $('current-input').value = ''; $('current-input').click();
     });
+    if (!file.baseline_sha256) {button.disabled=true;button.dataset.fixedDisabled='true';button.textContent='No captured hash';}
     heading.append(name, button); row.append(heading);
     const pair=node('div','hash-pair');
     for (const [label,value] of [['Captured hash',file.baseline_sha256],['Recorded hash',file.observed_sha256]]) {
       const cell=node('div','hash-cell');cell.append(node('span','hash-label',label),node('code','',shortHash(value)));pair.append(cell);
     }
-    row.append(pair, node('p',file.baseline_sha256 === file.observed_sha256 ? 'file-comparison' : 'file-comparison changed',file.baseline_sha256 === file.observed_sha256 ? 'Recorded bytes match' : 'Recorded bytes differ — review this change'));
+    row.append(pair, node('p',file.baseline_sha256 && file.baseline_sha256 === file.observed_sha256 ? 'file-comparison' : 'file-comparison changed',!file.baseline_sha256 || !file.observed_sha256 ? 'File evidence unavailable — review provenance' : file.baseline_sha256 === file.observed_sha256 ? 'Recorded bytes match' : 'Recorded bytes differ — review this change'));
     const full=node('details','hash-details'); full.append(node('summary','',`Full hashes for ${file.path}`),hashLine('Captured',file.baseline_sha256),hashLine('Recorded',file.observed_sha256));row.append(full);
     const checked=checks.get(file.path);
     if(checked){const result=node('div','file-result');result.dataset.tone=checked.error?'error':checked.matches?'matched':'attention';result.append(node('strong','',checked.error?'File check failed':checked.matches?'Current file matches':'Current file differs'),node('p','',`${checked.name} → ${file.path}${checked.error?' · '+checked.error:''}`));if(checked.hash)result.append(node('code','',checked.hash));row.append(result);}
     $('files').append(row);
+  }
+}
+
+function renderReceipts() {
+  const body=$('acceptance-body');body.replaceChildren();
+  const receipts=selected.receipts || [];
+  if (!receipts.length) {body.append(node('p','','No organizer receipt. '+(selected.synthetic === false ? 'Local reproduction does not establish acceptance or competition points.' : 'These are self-generated examples. Recorded replay and file matches do not earn competition points.')));return;}
+  body.append(node('p','',selected.synthetic ? 'Synthetic receipt history — not organizer acceptance.' : 'Operator-entered receipt history. Source authenticity is unverified; local replay is a separate conclusion.'));
+  for (const receipt of receipts) {
+    const row=node('div','receipt-row');
+    row.append(node('strong','',`${receipt.state[0].toUpperCase()+receipt.state.slice(1)} · ${receipt.synthetic?'synthetic fixture':'manually recorded'}`));
+    row.append(node('p','small',`Recorded ${receipt.recorded_at}${receipt.official_time ? ' · Response time '+receipt.official_time : ''}`));
+    if (receipt.source) row.append(node('p','',receipt.source));
+    row.append(hashLine('Candidate SHA-256',receipt.candidate_sha256));
+    if (receipt.points !== null) row.append(node('p','small',`Recorded point snapshot: ${receipt.points}. No score total is inferred.`));
+    if (receipt.evidence) {row.append(node('p',receipt.evidence_valid?'small':'small changed',`${receipt.evidence.path} · ${receipt.evidence_valid?'Local tool reports evidence hash matches':receipt.evidence_problem || 'Evidence unavailable'}`),hashLine('Evidence SHA-256',receipt.evidence.sha256));}
+    body.append(row);
   }
 }
 $('current-input').addEventListener('change', async event => {

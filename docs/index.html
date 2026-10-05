@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta id="local-capability" content="">
   <meta name="description" content="Review synthetic solve evidence and compare current file bytes locally.">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
   <title>Solve Pack · Evidence review</title>
@@ -14,7 +15,7 @@
   <a class="skip" href="#main">Skip to evidence</a>
   <header class="header page-width">
     <div class="identity"><a href="./" class="wordmark">Solve Pack<span aria-hidden="true"> /</span></a><span class="context">HITCON preparation</span></div>
-    <button class="button secondary" id="open-report">Open report file</button>
+    <div class="header-actions"><button class="button secondary" id="refresh-local" hidden>Refresh workspace records</button><button class="button secondary" id="open-report">Open sample report</button></div>
   </header>
   <div class="page-width">
     <div id="notice" class="notice" role="status" hidden></div>
@@ -24,7 +25,7 @@
         <div class="intro">
           <p class="eyebrow">A small desk for solve evidence</p>
           <h1 id="empty-title">Review a solve record.</h1>
-          <p class="lead">See what ran, compare the files, and find out what needs another look.</p>
+          <p class="lead" id="empty-description">See what ran, compare the files, and find out what needs another look.</p>
           <button class="button primary" id="open-example">Open worked example <span aria-hidden="true">→</span></button>
           <p class="small intro-note">Self-generated practice data. No real contest flags.</p>
         </div>
@@ -33,18 +34,18 @@
           <li><span class="step-number">02</span><div><h2>Check a current file</h2><p>Compare its bytes with the captured SHA-256 hash.</p></div></li>
           <li><span class="step-number">03</span><div><h2>Keep the conclusion precise</h2><p>A local match does not establish organizer acceptance.</p></div></li>
         </ol>
-        <div class="empty-footer"><p>Have a report? Use <strong>Open report file</strong> above.</p><p>Only reports explicitly marked synthetic. Up to 2 MiB. Files stay in this browser.</p></div>
+        <div class="empty-footer"><p>Have a sample report? Use <strong>Open sample report</strong> above.</p><p>Only imported reports explicitly marked synthetic. Up to 2 MiB. Files stay in this browser.</p></div>
       </section>
       <div id="workspace" class="workspace" hidden>
         <aside class="rail" aria-label="Solve records">
           <div class="rail-heading"><h2>Run records</h2><span id="record-count" class="small"></span></div>
           <div id="run-list"></div>
-          <p class="rail-note small">Synthetic examples<br>Local evidence only</p>
+          <p id="rail-note" class="rail-note small">Synthetic examples<br>Local evidence only</p>
           <button id="reopen-example" class="text-button">Reload worked example</button>
         </aside>
         <div class="mobile-select"><label for="run-select">Run record</label><select id="run-select"></select></div>
         <article id="evidence" aria-labelledby="challenge-title">
-          <div class="document-top"><p class="eyebrow" id="record-meta"></p><span class="synthetic-label">Synthetic evidence</span></div>
+          <div class="document-top"><p class="eyebrow" id="record-meta"></p><span id="evidence-label" class="synthetic-label">Synthetic evidence</span></div>
           <h1 id="challenge-title"></h1>
           <div class="verdict" id="verdict">
             <div class="status-mark" aria-hidden="true"></div>
@@ -55,7 +56,7 @@
             <div class="section-heading"><h2 id="output-title">Captured output</h2><span id="exit-summary" class="small mono"></span></div>
             <div id="candidate-list" class="candidates"></div>
             <div class="output"><div class="output-label">stdout</div><pre id="stdout" tabindex="0" aria-label="Standard output"></pre><div id="stderr-region" hidden><div class="output-label stderr-label">stderr</div><pre id="stderr" tabindex="0" aria-label="Standard error"></pre></div></div>
-            <p class="small muted output-note">Flag-shaped text is a candidate, not a correctness check.</p>
+            <p class="small muted output-note" id="output-note">Flag-shaped text is a candidate, not a correctness check.</p>
           </section>
           <section class="section" id="file-checks" aria-labelledby="files-title">
             <div class="section-heading"><h2 id="files-title">Declared files</h2><span class="small muted">SHA-256</span></div>
@@ -68,11 +69,11 @@
             <dl id="run-details"></dl>
             <details class="hash-details"><summary>Full output hashes</summary><div id="output-hashes"></div></details>
           </section>
-          <section class="acceptance section" aria-labelledby="acceptance-title"><h2 id="acceptance-title">Organizer acceptance</h2><p><strong>No organizer receipt.</strong> These are self-generated examples. Recorded replay and file matches do not earn competition points.</p></section>
+          <section class="acceptance section" aria-labelledby="acceptance-title"><h2 id="acceptance-title">Organizer acceptance</h2><div id="acceptance-body"></div></section>
         </article>
       </div>
     </main>
-    <footer class="footer"><span>Evidence before confidence.</span><span>No uploads · No saved session</span></footer>
+    <footer class="footer"><span>Evidence before confidence.</span><span id="storage-note">No uploads · No saved session</span></footer>
   </div>
   <input type="file" id="report-input" accept=".json,application/json" hidden aria-label="Synthetic report file">
   <input type="file" id="current-input" hidden aria-label="Current file to compare">

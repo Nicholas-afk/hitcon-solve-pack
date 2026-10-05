@@ -30,6 +30,8 @@ def parser():
     receipt.add_argument('root',type=Path);receipt.add_argument('run_id');receipt.add_argument('--candidate',required=True)
     receipt.add_argument('--state',required=True,choices=['attempted','accepted','rejected']);receipt.add_argument('--official-time')
     receipt.add_argument('--source');receipt.add_argument('--evidence');receipt.add_argument('--points',type=int)
+    review=commands.add_parser('review',help='Serve validated private evidence read-only on localhost')
+    review.add_argument('root',type=Path);review.add_argument('--port',type=int,default=8976);review.add_argument('--limit',type=int,default=16)
     return command
 
 
@@ -41,6 +43,15 @@ def summary(record):
 def main(argv=None):
     args=parser().parse_args(argv)
     try:
+        if args.command=='review':
+            from .review import make_review_server
+            server=make_review_server(args.root,args.port,args.limit)
+            print(f'Read-only local evidence: http://127.0.0.1:{server.server_port}/',flush=True)
+            print('Capture, replay and receipts remain explicit CLI actions. Press Ctrl+C to stop.',flush=True)
+            try:server.serve_forever()
+            except KeyboardInterrupt:pass
+            finally:server.server_close()
+            return 0
         if args.command=='init':
             root=args.root.resolve(strict=True)
             raw={'schema_version':1,'challenge_id':args.challenge,'solver':args.solver,'args':args.arg,'inputs':args.input,
