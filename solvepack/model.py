@@ -34,11 +34,17 @@ def fields(value, allowed, label):
         raise ValueError(f'{label} must be an object with supported fields: {", ".join(allowed)}.')
 
 
-def safe_file(root: Path, relative: str) -> Path:
+def relative_path(relative: str) -> str:
     text(relative, 'Relative file path', 256)
     parts = relative.split('/')
     if ('\\' in relative or ':' in relative or any(part in ('', '.', '..', '.solvepack', '.git') for part in parts)):
         raise ValueError(f'Unsafe relative file path: {relative}. Use a file inside the challenge folder.')
+    return relative
+
+
+def safe_file(root: Path, relative: str) -> Path:
+    relative_path(relative)
+    parts=relative.split('/')
     current = root
     try:
         for part in parts:
@@ -51,7 +57,7 @@ def safe_file(root: Path, relative: str) -> Path:
     return current
 
 
-def validate_manifest(root: Path, raw: dict) -> Manifest:
+def validate_manifest(root: Path, raw: dict, check_files=True) -> Manifest:
     fields(raw, ['schema_version','challenge_id','solver','args','inputs','dependencies','category','synthetic'], 'Manifest')
     if type(raw.get('schema_version')) is not int or raw['schema_version'] != 1:
         raise ValueError('Manifest schema_version must be 1.')
@@ -64,7 +70,9 @@ def validate_manifest(root: Path, raw: dict) -> Manifest:
     for path in inputs: text(path,'Input path',256)
     if solver == 'challenge.json' or 'challenge.json' in inputs or solver in inputs or len(set(inputs)) != len(inputs):
         raise ValueError('Manifest/solver paths are reserved and input paths must be unique.')
-    for path in [solver,*inputs]: safe_file(root,path)
+    for path in [solver,*inputs]:
+        relative_path(path)
+        if check_files: safe_file(root,path)
     canonical=[]
     for package in dependencies:
         text(package,'Dependency name',128)

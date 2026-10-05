@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "challenge_id": "synthetic-bytes",
+  "solver": "bytes-solve.py",
+  "args": [],
+  "inputs": [
+    "bytes-input.json"
+  ],
+  "dependencies": [],
+  "category": "Reverse",
+  "synthetic": true
+}

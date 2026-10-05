@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "challenge_id": "synthetic-arithmetic",
+  "solver": "solve.py",
+  "args": [],
+  "inputs": [
+    "input.json"
+  ],
+  "dependencies": [],
+  "category": "Crypto",
+  "synthetic": true
+}
