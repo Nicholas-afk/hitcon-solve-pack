@@ -44,8 +44,13 @@ async function openReport(read, isBundled, fromWorkspace = false) {
     const previous = selected?.id;
     report = next; bundled = isBundled; checks.clear(); lastCheck = null;
     const privateView = report.report_type === 'solvepack-local';
-    $('report-context').textContent = privateView ? report.title : 'Sample report · '+report.title;
-    $('report-context').hidden = false;
+    $('report-context').textContent = 'Sample report · '+report.title;
+    $('report-context').hidden = privateView;
+    $('workspace-path-details').hidden = !privateView;
+    if (privateView) {
+      $('workspace-name').textContent = report.title.includes('/') ? 'Local workspace: '+(report.title.split('/').at(-1) || '/') : report.title;
+      $('workspace-path').textContent = report.title;
+    }
     $('rail-note').textContent = privateView ? 'Recent local records and their captures. Up to 64 recent receipts per run. Refresh after CLI actions.' : 'Synthetic examples · Local evidence only';
     $('storage-note').textContent = privateView ? 'Records stored locally · No uploads' : 'No uploads · No saved session';
     if (!report.records.length) {

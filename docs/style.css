@@ -13,3 +13,5 @@ summary{overflow-wrap:anywhere}
 .workspace-context{margin-top:16px;font-size:14px;color:var(--secondary);overflow-wrap:anywhere}
 .record-identity{margin-top:12px;color:var(--secondary);overflow-wrap:anywhere}
 .run-button .run-time{font-variant-numeric:tabular-nums;font-size:11px}
+.workspace-context summary{font-size:14px;padding:10px 0}
+.workspace-context>p{padding:4px 0 12px;color:var(--secondary)}
