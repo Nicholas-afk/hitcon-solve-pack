@@ -11,6 +11,7 @@ class Element {
   prepend(...children) { this.children.unshift(...children); }
   replaceChildren(...children) { this.text = ''; this.children = children; }
   setAttribute(name, value) { this[name] = value; }
+  focus() { globalThis.document.activeElement = this; }
   addEventListener(name, handler) { this.listeners.set(name, handler); }
   click() { return this.emit('click'); }
   async emit(name) { return this.listeners.get(name)?.({target: this}); }
@@ -32,9 +33,11 @@ test('actual file-check handlers invalidate previous success during a replacemen
   const bytes = await readFile(new URL('../docs/example-files/input.json', import.meta.url));
   await check(new File([bytes], 'input.json'));
   assert.equal(elements.get('verdict-title').textContent, 'Current file matches');
+  assert.equal(globalThis.document.activeElement,elements.get('files').children[0].children[0].children.find(child=>child.tagName==='button'),'restore focus after the file chooser succeeds');
   await check({name: 'too-large.bin', size: 16 * 1024 * 1024 + 1});
   assert.equal(elements.get('verdict-title').textContent, 'File check failed');
   assert.match(elements.get('verdict-reason').textContent, /too-large\.bin.*16 MiB/);
+  assert.equal(globalThis.document.activeElement,elements.get('files').children[0].children[0].children.find(child=>child.tagName==='button'),'restore focus after the file chooser fails');
   assert.match(elements.get('recorded-result').textContent, /Replay output matched/);
   await check(new File([bytes], 'input.json'));
   let rejectRead;

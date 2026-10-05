@@ -17,6 +17,15 @@ function local() {
   return report;
 }
 
+test('local Unicode text uses the core code-point limits, including non-BMP filenames and literal arguments',async()=>{
+  const data=local();const path=Array(4).fill('🧪'.repeat(37)).join('/')+'/solve.py';
+  for(const row of data.records){row.files.find(file=>file.role==='solver').path=path;row.command[1]=path;row.command.push('🧪'.repeat(4096));}
+  const report=await verifyReport(parseReport(JSON.stringify(data),{allowLocal:true}),{allowLocal:true});
+  assert.equal(recordStatus(report,report.records[1]).code,'REPRODUCED');
+  const excess=structuredClone(data);excess.records[0].command.push('🧪'.repeat(4097));
+  assert.throws(()=>parseReport(JSON.stringify(excess),{allowLocal:true}),/at most 4096/);
+});
+
 test('private mode is explicit and raw binary digests are verified before a replay match',async()=>{
   const data=local();assert.throws(()=>parseReport(JSON.stringify(data)),/synthetic|local/i);
   const report=await verifyReport(parseReport(JSON.stringify(data),{allowLocal:true}),{allowLocal:true});

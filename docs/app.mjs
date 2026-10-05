@@ -7,7 +7,7 @@ const localMode = Boolean(capability && ['127.0.0.1','localhost'].includes(globa
 let report = null, selected = null, bundled = false, pending = null, lastCheck = null;
 const checks = new Map();
 const tone = code => ['REPRODUCED','MATCH'].includes(code) ? 'matched' : ['FAILED','TIMEOUT','OUTPUT_LIMIT','ERROR','FILE_ERROR'].includes(code) ? 'error' : ['STALE','AMBIGUOUS','DIFFERENT','BLOCKED','NO_CANDIDATE','CANDIDATE_LIMIT'].includes(code) ? 'attention' : 'neutral';
-const labels = {REPRODUCED:'Matched replay',CAPTURED:'Capture',STALE:'Changed input',AMBIGUOUS:'Ambiguous output',FAILED:'Exit error',TIMEOUT:'Timeout',OUTPUT_LIMIT:'Output limit',ERROR:'Start error',DIFFERENT:'Output differs',BLOCKED:'Blocked',NO_CANDIDATE:'No candidate',CANDIDATE_LIMIT:'Review limited'};
+const labels = {REPRODUCED:'Matched replay',CAPTURED:'Capture',STALE:'Provenance changed',AMBIGUOUS:'Ambiguous output',FAILED:'Exit error',TIMEOUT:'Timeout',OUTPUT_LIMIT:'Output limit',ERROR:'Start error',DIFFERENT:'Output differs',BLOCKED:'Blocked',NO_CANDIDATE:'No candidate',CANDIDATE_LIMIT:'Review limited'};
 
 function node(tag, className, text) {
   const element = document.createElement(tag);
@@ -23,9 +23,10 @@ function busy(message = '') {
   document.querySelectorAll('button, select').forEach(control => control.disabled = Boolean(message) || control.dataset.fixedDisabled === 'true');
   if (message) announce(message);
 }
-function error(message) {
-  const box = $('report-error'); box.replaceChildren(node('strong', '', 'Couldn’t open this report'), node('p', '', message + (localMode ? ' Fix the local issue and refresh to retry. Previous verified evidence remains available.' : ' Choose another synthetic report or reopen the worked example.')));
-  if (localMode) {const retry=node('button','button secondary','Retry workspace records');retry.type='button';retry.addEventListener('click',refreshLocal);box.append(retry);}
+function error(message, code) {
+  const reopen = localMode && code === 'REOPEN_REQUIRED';
+  const box = $('report-error'); box.replaceChildren(node('strong', '', 'Couldn’t open this report'), node('p', '', message + (localMode ? (reopen ? ' Previous verified evidence remains available until you reload.' : ' Fix the local issue and refresh to retry. Previous verified evidence remains available.') : ' Choose another synthetic report or reopen the worked example.')));
+  if (localMode) {const retry=node('button','button secondary',reopen?'Reload local viewer':'Retry workspace records');retry.type='button';retry.addEventListener('click',reopen?()=>globalThis.location.reload():refreshLocal);box.append(retry);}
   const recover = node('button', 'button secondary', 'Open worked example');
   recover.type = 'button'; recover.addEventListener('click', example); box.append(recover);
   box.hidden = false;
@@ -55,7 +56,7 @@ async function openReport(read, isBundled, fromWorkspace = false) {
     renderRail(); renderRecord();
     announce('Report opened. ' + recordStatus(report, selected).title + '.');
   } catch (caught) {
-    if (gate.isCurrent(token)) error(caught.message || 'The file could not be read.');
+    if (gate.isCurrent(token)) error(caught.message || 'The file could not be read.',caught.code);
   } finally { if (gate.isCurrent(token)) busy(); }
 }
 
@@ -64,7 +65,7 @@ async function refreshLocal() {
     const response=await fetch('./private-report.json',{cache:'no-store',headers:{'X-SolvePack-Capability':capability}});
     if (Number(response.headers.get('content-length'))>MAX_REPORT_BYTES) throw new Error('Report exceeds the 2 MiB limit. Use a smaller review --limit or show --full.');
     const source=await response.text();
-    if (!response.ok) {let message;try{message=JSON.parse(source).error;}catch{}throw new Error(message || `Workspace could not be loaded (HTTP ${response.status}).`);}
+    if (!response.ok) {let detail;try{detail=JSON.parse(source);}catch{}const failure=new Error(detail?.error || `Workspace could not be loaded (HTTP ${response.status}).`);failure.code=detail?.code;throw failure;}
     return source;
   },false,true);
 }
@@ -92,15 +93,15 @@ $('report-input').addEventListener('change', event => {
   }, false);
 });
 
-function selectRecord(id) {
+function selectRecord(id, keepRailFocus = false) {
   gate.next(); pending = null; lastCheck = null; checks.clear(); busy();
   selected = report.records.find(record => record.id === id);
-  renderRail(); renderRecord();
+  renderRail(keepRailFocus); renderRecord();
   announce(`${selected.challenge}. ${recordStatus(report, selected).title}.`);
 }
 $('run-select').addEventListener('change', event => selectRecord(event.target.value));
 
-function renderRail() {
+function renderRail(keepFocus = false) {
   const list = $('run-list'), select = $('run-select'); list.replaceChildren(); select.replaceChildren();
   $('record-count').textContent = report.records.length;
   const categories = [...new Set(report.records.map(record => record.category))];
@@ -113,10 +114,14 @@ function renderRail() {
       button.append(node('strong', '', record.challenge), node('span','',caption));
       button.setAttribute('aria-label', `${record.challenge} · ${caption}`);
       button.setAttribute('aria-current', String(record === selected));
-      button.addEventListener('click', () => selectRecord(record.id)); group.append(button);
+      button.addEventListener('click', () => selectRecord(record.id,true)); group.append(button);
       const option = node('option','',`${record.challenge} · ${caption}`); option.value = record.id; option.selected = record === selected; select.append(option);
     }
     list.append(group);
+  }
+  if (keepFocus) {
+    for (const group of list.children) for (const button of group.children)
+      if (button.getAttribute?.('aria-current') === 'true') button.focus();
   }
 }
 
@@ -166,13 +171,15 @@ function renderRecord() {
 
 const shortHash = hash => hash === null ? 'Unavailable' : hash.slice(0, 14) + '…' + hash.slice(-10);
 function hashLine(label, hash) {const div=node('div','full-hash',label); div.append(node('code','',hash === null ? 'Unavailable' : hash)); return div;}
-function renderFiles() {
+function renderFiles(focusPath) {
+  let focusTarget;
   $('files').replaceChildren();
   for (const file of selected.files) {
     const row = node('div','file-row');
     const heading = node('div','file-title'), name = node('div');
     name.append(node('code','',file.path), node('span','small',file.role));
     const button = node('button','button secondary',`Check ${file.path}`);
+    if (file.path === focusPath) focusTarget=button;
     button.type='button'; button.addEventListener('click', () => {
       if (!file.baseline_sha256) return;
       pending = {file, record:selected, report, token:gate.next()};
@@ -190,6 +197,7 @@ function renderFiles() {
     if(checked){const result=node('div','file-result');result.dataset.tone=checked.error?'error':checked.matches?'matched':'attention';result.append(node('strong','',checked.error?'File check failed':checked.matches?'Current file matches':'Current file differs'),node('p','',`${checked.name} → ${file.path}${checked.error?' · '+checked.error:''}`));if(checked.hash)result.append(node('code','',checked.hash));row.append(result);}
     $('files').append(row);
   }
+  focusTarget?.focus();
 }
 
 function renderReceipts() {
@@ -218,9 +226,9 @@ $('current-input').addEventListener('change', async event => {
     const result=await checkFile(file,target.file.baseline_sha256);
     if(!gate.isCurrent(target.token))return;
     lastCheck={...result,name:file.name,path:target.file.path};checks.set(target.file.path,lastCheck);
-    renderVerdict();renderFiles();announce(`${result.matches?'Current file matches':'Current file differs'}. Only ${target.file.path} checked.`);
-  }catch(caught){if(gate.isCurrent(target.token)){lastCheck={name:file.name,path:target.file.path,error:caught.message || 'The file could not be read.'};checks.set(target.file.path,lastCheck);renderVerdict();renderFiles();announce(lastCheck.error);}}
-  finally{if(gate.isCurrent(target.token))busy();}
+    renderVerdict();announce(`${result.matches?'Current file matches':'Current file differs'}. Only ${target.file.path} checked.`);
+  }catch(caught){if(gate.isCurrent(target.token)){lastCheck={name:file.name,path:target.file.path,error:caught.message || 'The file could not be read.'};checks.set(target.file.path,lastCheck);renderVerdict();announce(lastCheck.error);}}
+  finally{if(gate.isCurrent(target.token)){busy();renderFiles(target.file.path);}}
 });
 
 function renderDetails() {

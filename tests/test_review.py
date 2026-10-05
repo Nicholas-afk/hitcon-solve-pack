@@ -24,6 +24,11 @@ class ReviewTests(unittest.TestCase):
                 token=re.search(rb'id="local-capability"[^>]*content="([^"]+)"',body)[1].decode()
                 self.assertEqual(headers['Cache-Control'],'no-store');self.assertEqual(headers['X-Frame-Options'],'DENY')
                 self.assertEqual(request('/private-report.json')[0],403)
+                for invalid in ['expired-server-capability','ÿ']:
+                    response=request('/private-report.json',{'X-SolvePack-Capability':invalid})
+                    self.assertEqual(response[0],403)
+                    self.assertEqual(json.loads(response[2])['code'],'REOPEN_REQUIRED')
+                    self.assertIn('Reload',json.loads(response[2])['error'])
                 good={'X-SolvePack-Capability':token}
                 for extra in [{'Host':'attacker.example'},{'Origin':'https://attacker.example'},{'Sec-Fetch-Site':'cross-site'}]:
                     self.assertEqual(request('/private-report.json',{**good,**extra})[0],403)

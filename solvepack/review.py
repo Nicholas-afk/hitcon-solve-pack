@@ -27,14 +27,15 @@ def make_review_server(root: Path,port=0,limit=16):
             for name,value in {'Content-Type':content_type,'Content-Length':str(len(body)),'Cache-Control':'no-store',
                                'X-Frame-Options':'DENY','X-Content-Type-Options':'nosniff'}.items():self.send_header(name,value)
             self.end_headers();self.wfile.write(body)
-        def failure(self,status,message):self.reply(status,json.dumps({'error':message}).encode())
+        def failure(self,status,message,code=None):
+            self.reply(status,json.dumps({'error':message,**({'code':code} if code else {})}).encode())
         def do_GET(self):
             hosts={f'127.0.0.1:{self.server.server_port}',f'localhost:{self.server.server_port}'}
             if self.headers.get('Host') not in hosts or self.headers.get('Origin') not in {None,*['http://'+host for host in hosts]} or self.headers.get('Sec-Fetch-Site') in ('cross-site','cross-origin'):
                 self.failure(403,'Use this viewer directly on localhost.');return
             if self.path=='/private-report.json':
-                if not hmac.compare_digest(self.headers.get('X-SolvePack-Capability',''),capability):
-                    self.failure(403,'Open the local viewer first.');return
+                if not hmac.compare_digest(self.headers.get('X-SolvePack-Capability','').encode('utf-8'),capability.encode('ascii')):
+                    self.failure(403,'Reload the local viewer after restarting review; its private access token has changed.','REOPEN_REQUIRED');return
                 try:
                     body=json.dumps(local_report(root,limit),ensure_ascii=True,allow_nan=False).encode()
                     if len(body)>MAX_DOCUMENT_BYTES:self.failure(413,'Local report exceeds 2 MiB. Restart review with --limit 1 or use show --full for individual records.');return

@@ -14,7 +14,8 @@ function keys(value, allowed, label) {
 }
 
 function text(value, label, max = 256) {
-  if (typeof value !== 'string' || !value || value.length > max) fail(`${label} must be nonempty text, at most ${max} characters.`);
+  // The Python core bounds Unicode code points, not UTF-16 code units.
+  if (typeof value !== 'string' || !value || (value.length > max && [...value].length > max)) fail(`${label} must be nonempty text, at most ${max} characters.`);
 }
 
 function hash(value, label) {
