@@ -1,0 +1,282 @@
+{
+  "schema_version": 1,
+  "report_type": "solvepack-synthetic",
+  "synthetic": true,
+  "title": "Worked synthetic examples",
+  "generated_at": "2026-10-05T17:06:04.972780+00:00",
+  "records": [
+    {
+      "id": "modular-capture",
+      "challenge": "Modular arithmetic",
+      "category": "Crypto",
+      "kind": "capture",
+      "created_at": "2026-10-05T17:06:04.551084+00:00",
+      "runtime": "Python 3.14.3 \u00b7 Darwin arm64",
+      "duration_ms": 26.988,
+      "command": [
+        "python3",
+        "solve.py"
+      ],
+      "timeout_s": 2,
+      "exit_code": 0,
+      "execution_status": "OK",
+      "files": [
+        {
+          "path": "input.json",
+          "role": "input",
+          "baseline_sha256": "11e1ed0d578c295afa5a4096ff7211cc103dd053ad46d5a5a3203c2980e67465",
+          "observed_sha256": "11e1ed0d578c295afa5a4096ff7211cc103dd053ad46d5a5a3203c2980e67465"
+        },
+        {
+          "path": "solve.py",
+          "role": "solver",
+          "baseline_sha256": "da1564b48c0e96a47c32a37303397d55b4a36b0d06fd0a27689c1fa228ccfa2a",
+          "observed_sha256": "da1564b48c0e96a47c32a37303397d55b4a36b0d06fd0a27689c1fa228ccfa2a"
+        }
+      ],
+      "output": {
+        "stdout": "hitcon{synthetic_modular_257}\n",
+        "stderr": "",
+        "stdout_sha256": "0688776eabaf4a8af0c19a13f6b391bac4a251c875be7b7c60d990cc826ab76e",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "modular-replay",
+      "challenge": "Modular arithmetic",
+      "category": "Crypto",
+      "kind": "replay",
+      "created_at": "2026-10-05T17:06:04.578685+00:00",
+      "runtime": "Python 3.14.3 \u00b7 Darwin arm64",
+      "duration_ms": 26.793,
+      "command": [
+        "python3",
+        "solve.py"
+      ],
+      "timeout_s": 2,
+      "exit_code": 0,
+      "execution_status": "OK",
+      "files": [
+        {
+          "path": "input.json",
+          "role": "input",
+          "baseline_sha256": "11e1ed0d578c295afa5a4096ff7211cc103dd053ad46d5a5a3203c2980e67465",
+          "observed_sha256": "11e1ed0d578c295afa5a4096ff7211cc103dd053ad46d5a5a3203c2980e67465"
+        },
+        {
+          "path": "solve.py",
+          "role": "solver",
+          "baseline_sha256": "da1564b48c0e96a47c32a37303397d55b4a36b0d06fd0a27689c1fa228ccfa2a",
+          "observed_sha256": "da1564b48c0e96a47c32a37303397d55b4a36b0d06fd0a27689c1fa228ccfa2a"
+        }
+      ],
+      "output": {
+        "stdout": "hitcon{synthetic_modular_257}\n",
+        "stderr": "",
+        "stdout_sha256": "0688776eabaf4a8af0c19a13f6b391bac4a251c875be7b7c60d990cc826ab76e",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "baseline_id": "modular-capture"
+    },
+    {
+      "id": "modular-stale",
+      "challenge": "Modular arithmetic",
+      "category": "Crypto",
+      "kind": "replay",
+      "created_at": "2026-10-05T17:06:04.578925+00:00",
+      "runtime": "Python 3.14.3 \u00b7 Darwin arm64",
+      "duration_ms": 0,
+      "command": [
+        "python3",
+        "solve.py"
+      ],
+      "timeout_s": 2,
+      "exit_code": null,
+      "execution_status": "NOT_RUN",
+      "files": [
+        {
+          "path": "input.json",
+          "role": "input",
+          "baseline_sha256": "11e1ed0d578c295afa5a4096ff7211cc103dd053ad46d5a5a3203c2980e67465",
+          "observed_sha256": "0efddc935bf8472765fac35f978d2dc93848341a4ede2ed088055aee65239371"
+        },
+        {
+          "path": "solve.py",
+          "role": "solver",
+          "baseline_sha256": "da1564b48c0e96a47c32a37303397d55b4a36b0d06fd0a27689c1fa228ccfa2a",
+          "observed_sha256": "da1564b48c0e96a47c32a37303397d55b4a36b0d06fd0a27689c1fa228ccfa2a"
+        }
+      ],
+      "output": {
+        "stdout": "",
+        "stderr": "",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "baseline_id": "modular-capture"
+    },
+    {
+      "id": "bytes-capture",
+      "challenge": "XOR byte recovery",
+      "category": "Reverse",
+      "kind": "capture",
+      "created_at": "2026-10-05T17:06:04.605034+00:00",
+      "runtime": "Python 3.14.3 \u00b7 Darwin arm64",
+      "duration_ms": 25.982,
+      "command": [
+        "python3",
+        "bytes-solve.py"
+      ],
+      "timeout_s": 2,
+      "exit_code": 0,
+      "execution_status": "OK",
+      "files": [
+        {
+          "path": "bytes-input.json",
+          "role": "input",
+          "baseline_sha256": "03f30b6224f8103c870ee6bd0f688eaacfd081b286ff70a09d039d895d2e8b73",
+          "observed_sha256": "03f30b6224f8103c870ee6bd0f688eaacfd081b286ff70a09d039d895d2e8b73"
+        },
+        {
+          "path": "bytes-solve.py",
+          "role": "solver",
+          "baseline_sha256": "176f7cd4c7445692f2b2ff9b975aba93b24219097a4055164c8dc9e7baf73f10",
+          "observed_sha256": "176f7cd4c7445692f2b2ff9b975aba93b24219097a4055164c8dc9e7baf73f10"
+        }
+      ],
+      "output": {
+        "stdout": "hitcon{synthetic_xor_bytes}\n",
+        "stderr": "",
+        "stdout_sha256": "cee3e3d65cde51fdeb3893fabc3dcf7861d84ce71e70ee1b84f29b8ea74a3948",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "bytes-replay",
+      "challenge": "XOR byte recovery",
+      "category": "Reverse",
+      "kind": "replay",
+      "created_at": "2026-10-05T17:06:04.630697+00:00",
+      "runtime": "Python 3.14.3 \u00b7 Darwin arm64",
+      "duration_ms": 25.346,
+      "command": [
+        "python3",
+        "bytes-solve.py"
+      ],
+      "timeout_s": 2,
+      "exit_code": 0,
+      "execution_status": "OK",
+      "files": [
+        {
+          "path": "bytes-input.json",
+          "role": "input",
+          "baseline_sha256": "03f30b6224f8103c870ee6bd0f688eaacfd081b286ff70a09d039d895d2e8b73",
+          "observed_sha256": "03f30b6224f8103c870ee6bd0f688eaacfd081b286ff70a09d039d895d2e8b73"
+        },
+        {
+          "path": "bytes-solve.py",
+          "role": "solver",
+          "baseline_sha256": "176f7cd4c7445692f2b2ff9b975aba93b24219097a4055164c8dc9e7baf73f10",
+          "observed_sha256": "176f7cd4c7445692f2b2ff9b975aba93b24219097a4055164c8dc9e7baf73f10"
+        }
+      ],
+      "output": {
+        "stdout": "hitcon{synthetic_xor_bytes}\n",
+        "stderr": "",
+        "stdout_sha256": "cee3e3d65cde51fdeb3893fabc3dcf7861d84ce71e70ee1b84f29b8ea74a3948",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "baseline_id": "bytes-capture"
+    },
+    {
+      "id": "ambiguous-capture",
+      "challenge": "Two possible candidates",
+      "category": "Diagnostics",
+      "kind": "capture",
+      "created_at": "2026-10-05T17:06:04.650224+00:00",
+      "runtime": "Python 3.14.3 \u00b7 Darwin arm64",
+      "duration_ms": 19.252,
+      "command": [
+        "python3",
+        "ambiguous.py"
+      ],
+      "timeout_s": 2,
+      "exit_code": 0,
+      "execution_status": "OK",
+      "files": [
+        {
+          "path": "ambiguous.py",
+          "role": "solver",
+          "baseline_sha256": "35887f14292ffabe54666ea59c1352c33476498a56af650eb0951b701ab68cf6",
+          "observed_sha256": "35887f14292ffabe54666ea59c1352c33476498a56af650eb0951b701ab68cf6"
+        }
+      ],
+      "output": {
+        "stdout": "hitcon{synthetic_option_a}\nhitcon{synthetic_option_b}\n",
+        "stderr": "",
+        "stdout_sha256": "32da185ae61677db13032d0f92ceb07204bb25ccc9a7b41f56cab9db372ef197",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "failed-capture",
+      "challenge": "Output before failure",
+      "category": "Diagnostics",
+      "kind": "capture",
+      "created_at": "2026-10-05T17:06:04.668961+00:00",
+      "runtime": "Python 3.14.3 \u00b7 Darwin arm64",
+      "duration_ms": 18.493,
+      "command": [
+        "python3",
+        "failed.py"
+      ],
+      "timeout_s": 2,
+      "exit_code": 7,
+      "execution_status": "FAILED",
+      "files": [
+        {
+          "path": "failed.py",
+          "role": "solver",
+          "baseline_sha256": "016978926d07d2fb7a585385005ab12b8c7d427c4ed66f9e6be89e0e561e8962",
+          "observed_sha256": "016978926d07d2fb7a585385005ab12b8c7d427c4ed66f9e6be89e0e561e8962"
+        }
+      ],
+      "output": {
+        "stdout": "hitcon{synthetic_decoy}\n",
+        "stderr": "",
+        "stdout_sha256": "0ac3ab761add8687ca5196da6b6ca3b298494a8ad8c4dbc70ed216b72af4407a",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "id": "timeout-capture",
+      "challenge": "Deadline reached",
+      "category": "Diagnostics",
+      "kind": "capture",
+      "created_at": "2026-10-05T17:06:04.972103+00:00",
+      "runtime": "Python 3.14.3 \u00b7 Darwin arm64",
+      "duration_ms": 302.908,
+      "command": [
+        "python3",
+        "timeout.py"
+      ],
+      "timeout_s": 0.1,
+      "exit_code": -15,
+      "execution_status": "TIMEOUT",
+      "files": [
+        {
+          "path": "timeout.py",
+          "role": "solver",
+          "baseline_sha256": "21255e7ef49a8ddd4ad00b842c6acae94cbcfa26741aff7da80ce657dc6e5aee",
+          "observed_sha256": "21255e7ef49a8ddd4ad00b842c6acae94cbcfa26741aff7da80ce657dc6e5aee"
+        }
+      ],
+      "output": {
+        "stdout": "",
+        "stderr": "",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ]
+}
