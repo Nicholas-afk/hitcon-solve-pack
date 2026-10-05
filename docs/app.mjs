@@ -1,11 +1,11 @@
-import {parseReport, verifyReport, recordStatus, viewVerdict, candidates, checkFile, createSelectionGate, MAX_REPORT_BYTES} from './model.mjs';
+import {parseReport, verifyReport, recordStatus, viewVerdict, candidateScan, checkFile, createSelectionGate, MAX_REPORT_BYTES} from './model.mjs';
 
 const $ = id => document.getElementById(id);
 const gate = createSelectionGate();
 let report = null, selected = null, bundled = false, pending = null, lastCheck = null;
 const checks = new Map();
-const tone = code => ['REPRODUCED','MATCH'].includes(code) ? 'matched' : ['FAILED','TIMEOUT','OUTPUT_LIMIT','ERROR'].includes(code) ? 'error' : ['STALE','AMBIGUOUS','DIFFERENT','BLOCKED','NO_CANDIDATE'].includes(code) ? 'attention' : 'neutral';
-const labels = {REPRODUCED:'Matched replay',CAPTURED:'Capture',STALE:'Changed input',AMBIGUOUS:'Ambiguous output',FAILED:'Exit error',TIMEOUT:'Timeout',OUTPUT_LIMIT:'Output limit',ERROR:'Start error',DIFFERENT:'Output differs',BLOCKED:'Blocked',NO_CANDIDATE:'No candidate'};
+const tone = code => ['REPRODUCED','MATCH'].includes(code) ? 'matched' : ['FAILED','TIMEOUT','OUTPUT_LIMIT','ERROR','FILE_ERROR'].includes(code) ? 'error' : ['STALE','AMBIGUOUS','DIFFERENT','BLOCKED','NO_CANDIDATE','CANDIDATE_LIMIT'].includes(code) ? 'attention' : 'neutral';
+const labels = {REPRODUCED:'Matched replay',CAPTURED:'Capture',STALE:'Changed input',AMBIGUOUS:'Ambiguous output',FAILED:'Exit error',TIMEOUT:'Timeout',OUTPUT_LIMIT:'Output limit',ERROR:'Start error',DIFFERENT:'Output differs',BLOCKED:'Blocked',NO_CANDIDATE:'No candidate',CANDIDATE_LIMIT:'Review limited'};
 
 function node(tag, className, text) {
   const element = document.createElement(tag);
@@ -109,7 +109,7 @@ function renderRecord() {
   $('exit-summary').textContent = selected.exit_code === null ? 'No exit code' : `Exit ${selected.exit_code} · ${(selected.duration_ms/1000).toFixed(3)}s`;
   renderVerdict();
   const list = $('candidate-list'); list.replaceChildren();
-  const found = candidates(selected);
+  const scan = candidateScan(selected), found = scan.values;
   const status = recordStatus(report, selected);
   for (const [index, candidate] of found.entries()) {
     const line = node('div', 'candidate'); const code = node('code', '', candidate);
@@ -128,7 +128,8 @@ function renderRecord() {
     line.append(code, button); list.append(line);
   }
   if (found.length && ['FAILED','TIMEOUT','OUTPUT_LIMIT','ERROR'].includes(status.code)) list.prepend(node('p','small muted','Diagnostic candidates — this execution did not succeed.'));
-  if (!found.length) list.append(node('p','small muted','No flag-shaped candidate in this output.'));
+  if (scan.limited) list.append(node('p','small muted','Candidate display limited: up to 32 distinct values, each at most 4096 characters. Inspect the full raw output locally.'));
+  if (!found.length) list.append(node('p','small muted',scan.limited?'No candidate fits the display limits.':'No flag-shaped candidate in this output.'));
   $('stdout').textContent = selected.output.stdout || '(no standard output)';
   $('stderr-region').hidden = !selected.output.stderr;
   $('stderr').textContent = selected.output.stderr;
@@ -156,20 +157,22 @@ function renderFiles() {
     row.append(pair, node('p',file.baseline_sha256 === file.observed_sha256 ? 'file-comparison' : 'file-comparison changed',file.baseline_sha256 === file.observed_sha256 ? 'Recorded bytes match' : 'Recorded bytes differ — review this change'));
     const full=node('details','hash-details'); full.append(node('summary','',`Full hashes for ${file.path}`),hashLine('Captured',file.baseline_sha256),hashLine('Recorded',file.observed_sha256));row.append(full);
     const checked=checks.get(file.path);
-    if(checked){const result=node('div','file-result');result.dataset.tone=checked.error?'error':checked.matches?'matched':'attention';result.append(node('strong','',checked.error?'File check failed':checked.matches?'Current file matches':'Current file differs'),node('p','',checked.error || `${checked.name} → ${file.path}`));if(checked.hash)result.append(node('code','',checked.hash));row.append(result);}
+    if(checked){const result=node('div','file-result');result.dataset.tone=checked.error?'error':checked.matches?'matched':'attention';result.append(node('strong','',checked.error?'File check failed':checked.matches?'Current file matches':'Current file differs'),node('p','',`${checked.name} → ${file.path}${checked.error?' · '+checked.error:''}`));if(checked.hash)result.append(node('code','',checked.hash));row.append(result);}
     $('files').append(row);
   }
 }
 $('current-input').addEventListener('change', async event => {
   const file=event.target.files[0], target=pending; pending=null;
   if(!file || !target || !gate.isCurrent(target.token) || target.record!==selected || target.report!==report)return;
+  lastCheck={name:file.name,path:target.file.path,pending:true};checks.delete(target.file.path);
+  renderVerdict();renderFiles();
   busy(`Checking ${file.name}…`);
   try {
     const result=await checkFile(file,target.file.baseline_sha256);
     if(!gate.isCurrent(target.token))return;
     lastCheck={...result,name:file.name,path:target.file.path};checks.set(target.file.path,lastCheck);
     renderVerdict();renderFiles();announce(`${result.matches?'Current file matches':'Current file differs'}. Only ${target.file.path} checked.`);
-  }catch(caught){if(gate.isCurrent(target.token)){checks.set(target.file.path,{error:caught.message});renderFiles();announce(caught.message);}}
+  }catch(caught){if(gate.isCurrent(target.token)){lastCheck={name:file.name,path:target.file.path,error:caught.message || 'The file could not be read.'};checks.set(target.file.path,lastCheck);renderVerdict();renderFiles();announce(lastCheck.error);}}
   finally{if(gate.isCurrent(target.token))busy();}
 });
 

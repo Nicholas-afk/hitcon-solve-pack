@@ -2,6 +2,7 @@ export const MAX_REPORT_BYTES = 2 * 1024 * 1024;
 export const MAX_FILE_BYTES = 16 * 1024 * 1024;
 const encoder = new TextEncoder();
 const verified = new WeakSet();
+const candidateCache = new WeakMap();
 const HASH = /^[a-f0-9]{64}$/;
 const STATES = new Set(['OK', 'FAILED', 'TIMEOUT', 'OUTPUT_LIMIT', 'ERROR', 'NOT_RUN']);
 const fail = message => { throw new Error(message); };
@@ -109,9 +110,36 @@ export async function verifyReport(report) {
   return snapshot;
 }
 
-export function candidates(record) {
-  return [...new Set((record.output.stdout + '\n' + record.output.stderr).match(/hitcon\{[\x20-\x7E]+?\}/g) || [])];
+export function candidateScan(record) {
+  if (candidateCache.has(record)) return candidateCache.get(record);
+  const source = record.output.stdout + '\n' + record.output.stderr;
+  const values = new Set();
+  let start = -1, limited = false;
+  // Scan once: an unmatched prefix must never restart a scan of its suffix.
+  for (let index = 0; index < source.length; index++) {
+    if (start < 0) {
+      if (source.startsWith('hitcon{', index)) { start = index; index += 6; }
+      continue;
+    }
+    const point = source.charCodeAt(index);
+    if (point < 0x20 || point > 0x7e) { start = -1; continue; }
+    if (source[index] !== '}' || index === start + 7) continue;
+    if (index - start + 1 > 4096) limited = true;
+    else {
+      const value = source.slice(start, index + 1);
+      if (!values.has(value)) {
+        if (values.size === 32) limited = true;
+        else values.add(value);
+      }
+    }
+    start = -1;
+  }
+  const result = Object.freeze({values: Object.freeze([...values]), limited});
+  if (Object.isFrozen(record) && Object.isFrozen(record.output)) candidateCache.set(record, result);
+  return result;
 }
+
+export const candidates = record => candidateScan(record).values;
 
 export function recordStatus(report, record) {
   const status = (code, title, reason) => ({code, title, reason});
@@ -126,7 +154,8 @@ export function recordStatus(report, record) {
   const base = report.records.find(item => item.id === record.baseline_id);
   if (base && (base.runtime !== record.runtime || JSON.stringify(base.command) !== JSON.stringify(record.command))) return status('STALE', 'Runtime or command changed', 'The replay environment differs from its capture. Recapture locally before relying on it.');
   if (execution === 'NOT_RUN') return status('BLOCKED', 'Solver was not run', 'The report records no execution. Review the local preparation steps.');
-  const found = candidates(record);
+  const scan = candidateScan(record), found = scan.values;
+  if (scan.limited) return status('CANDIDATE_LIMIT', 'Candidate review limited', 'At most 32 distinct candidates of up to 4096 characters are shown. Review the full raw output locally; a complete count or single-candidate result is not established.');
   if (found.length > 1) return status('AMBIGUOUS', `${found.length} candidates found`, 'Resolve the ambiguity locally; this report does not choose a candidate.');
   if (found.length === 0) return status('NO_CANDIDATE', 'No candidate found', 'The process completed without a flag-shaped candidate. Inspect its output.');
   if (!base) return status('CAPTURED', 'Candidate captured', 'One candidate was recorded. A separate local replay is still needed.');
@@ -152,6 +181,10 @@ export function createSelectionGate() {
 export function viewVerdict(report, record, currentFile) {
   const status = recordStatus(report, record);
   if (!currentFile || !['REPRODUCED', 'CAPTURED'].includes(status.code)) return status;
+  if (currentFile.pending) return {code: 'CHECKING', title: 'Checking current file',
+    reason: `Checking ${currentFile.name} against the captured hash for ${currentFile.path}. The current-file result is pending.`};
+  if (currentFile.error) return {code: 'FILE_ERROR', title: 'File check failed',
+    reason: `${currentFile.name} could not be checked against ${currentFile.path}. ${currentFile.error} No current-file match is established by this selection.`};
   return {code: currentFile.matches ? 'MATCH' : 'STALE',
     title: currentFile.matches ? 'Current file matches' : 'Current file differs',
     reason: `${currentFile.name} ${currentFile.matches ? 'matches' : 'does not match'} the captured hash for ${currentFile.path}. Only this file was checked here; a complete local replay is still needed.`};

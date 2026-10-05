@@ -14,6 +14,8 @@ Open http://127.0.0.1:8973/ in your browser. Choose **Open worked example**, the
 
 File comparison is real browser SHA-256, limited to 16 MiB per file. It checks that one file only. The browser does not run Python, authenticate the report's author, perform a complete replay, or submit flags. Recorded hashes are independently checked against recorded text, establishing internal consistency rather than trustworthy origin. The synthetic marker is an author's declaration, not an automatic detector of private/live material; do not load live contest or private reports here.
 
+A replacement file selection immediately invalidates the prior current-file verdict. Read, size or hash failures name the failed selection; recorded replay provenance remains separate. Candidate scanning is linear in the bounded output length. The candidate list displays at most 32 distinct values of at most 4096 characters each; exceeding either limit produces **Candidate review limited**, never a complete single-candidate result. Raw output remains available for local inspection.
+
 ## Rebuild the worked report
 
 Python 3.11+ on POSIX is required for the optional local generator. Tested here on Python 3.14.3, macOS ARM64. The generator executes only fixed self-generated fixtures, including deliberate failure and timeout; no third-party challenge code or shell strings. This runner bounds output and time and cleans ordinary process groups; it is not a security sandbox, CPU/memory limit, or containment for escaped children.
@@ -25,6 +27,8 @@ node --test tests/*.test.mjs
 ```
 
 Node 22+ supports the built-in test/runtime APIs. There are no installed dependencies. Reports store UTF-8 text; the fixtures emit ASCII. Arbitrary binary output would need a separate byte-preserving record format before the core CLI can use it.
+
+Run the complete behavior checks with `python3 tools/check.py`. Current verification uses Python 3.14.3 and Node 22.18.0: 10 Python and 14 Node cases. Other runtimes remain unverified.
 
 ## Hosting boundary
 
