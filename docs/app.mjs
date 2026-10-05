@@ -23,6 +23,8 @@ function busy(message = '') {
 }
 function error(message) {
   const box = $('report-error'); box.replaceChildren(node('strong', '', 'Couldn’t open this report'), node('p', '', message + ' Choose another synthetic report or reopen the worked example.'));
+  const recover = node('button', 'button secondary', 'Open worked example');
+  recover.type = 'button'; recover.addEventListener('click', example); box.append(recover);
   box.hidden = false;
 }
 function clearError() { $('report-error').hidden = true; $('report-error').replaceChildren(); }

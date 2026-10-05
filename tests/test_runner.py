@@ -33,6 +33,21 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(r.run_status, 'TIMEOUT')
         self.assertLess(r.elapsed_s, 2)
 
+    def test_successful_parent_does_not_leave_a_same_group_child_running(self):
+        with tempfile.TemporaryDirectory() as root:
+            marker = str(Path(root) / 'pid')
+            child = "import os,time,pathlib;pathlib.Path(" + repr(marker) + ").write_text(str(os.getpid()));time.sleep(2)"
+            code = "import subprocess,sys,time,pathlib;subprocess.Popen([sys.executable,'-c'," + repr(child) + "],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)\nwhile not pathlib.Path(" + repr(marker) + ").exists(): time.sleep(.01)"
+            r = self.run_code(code)
+            self.assertEqual(r.run_status, 'OK')
+            pid = Path(marker).read_text()
+            stat = subprocess.run(['/bin/ps', '-o', 'stat=', '-p', pid], capture_output=True, text=True).stdout.strip()
+            self.assertTrue(not stat or stat.startswith('Z'), stat)
+
+    def test_saturated_dual_streams_are_complete(self):
+        r = self.run_code("import os;[(os.write(1,b'a'*2048),os.write(2,b'b'*2048)) for _ in range(64)]")
+        self.assertEqual((r.run_status, len(r.stdout), len(r.stderr)), ('OK', 131072, 131072))
+
     def test_terminated_leader_and_term_ignoring_child_cleanup(self):
         with tempfile.TemporaryDirectory() as root:
             marker = str(Path(root) / 'pid')

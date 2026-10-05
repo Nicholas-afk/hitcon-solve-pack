@@ -51,6 +51,7 @@ def run_solver(argv: list[str], cwd: Path, env: dict[str, str],
     streams = {'stdout': bytearray(), 'stderr': bytearray()}
     selector = selectors.DefaultSelector()
     status = 'OK'
+    cleanup_done = False
     try:
         for name in streams:
             pipe = getattr(process, name)
@@ -78,11 +79,13 @@ def run_solver(argv: list[str], cwd: Path, env: dict[str, str],
             status = 'FAILED' if process.returncode else 'OK'
         else:
             _stop_group(process)
+            cleanup_done = True
     finally:
         selector.close()
         for name in streams:
             getattr(process, name).close()
-        if process.poll() is None:
+        # A reaped parent can leave descendants alive after closing their pipes.
+        if not cleanup_done:
             _stop_group(process)
     return RunResult(status, process.returncode, time.monotonic() - started,
                      bytes(streams['stdout']), bytes(streams['stderr']))
