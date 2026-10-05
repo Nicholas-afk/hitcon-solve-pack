@@ -1,0 +1,11 @@
+# Attribution and licensing
+
+Solve Pack's source, documentation, icons and self-generated fixtures in this repository are released under the [MIT License](LICENSE), copyright 2026 Nicholas Tanner. Development, evaluation and documentation used OpenAI Codex AI assistance. Internal model review and automated simulated use are not external user feedback.
+
+The arithmetic and byte examples, negative-case solvers and `docs/demo.json` are synthetic fixtures created for this tool. They are not HITCON challenges, actual accepted flags, organizer responses or competition standings. The paper icon is an original inline SVG; no third-party image, font, template, copied product layout or bundled library is included. The interface uses fonts installed on the visitor's system. Python's standard library provides local processing; browser Web Crypto provides SHA-256; Node's built-in test runner is used only for development. Their runtimes are not redistributed here.
+
+HITCON is referenced to describe the preparation context. Solve Pack is independently developed and is not endorsed by HITCON. Actual rules and submissions belong to the [official HITCON CTF 2026 site](https://ctf2026.hitcon.org/). No permission to use AI during the live competition is inferred from developing this preparation tool.
+
+Two HITCON 2022 crypto challenges were privately reproduced using consulted methods by [maple3142](https://github.com/maple3142/My-CTF-Challenges/tree/7b3e786a2c20812f4da23536c7817bdfe8113dd6/HITCON%202022): BabySSS and Superprime. This was guided historical reproduction, not blind solving or entrant performance. Their source, data, solutions, flag outputs and private evidence are excluded from this repository and release. The MIT license above does not grant rights over those materials. PyCryptodome used in that separate private practice is not a dependency or redistributed component of Solve Pack.
+
+The evidence-storage and provenance problem is also addressed by existing tools, including [DVC pipelines](https://doc.dvc.org/start/data-pipelines/data-pipelines). Solve Pack's limited focus is a trusted local CTF solver's candidate/reproduction/manual-response evidence. It reruns commands; it does not provide deterministic execution recording such as [rr](https://rr-project.org/).

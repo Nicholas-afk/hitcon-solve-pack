@@ -1,10 +1,20 @@
 # HITCON Solve Pack
 
+[Open the synthetic demo](https://nicholas-afk.github.io/hitcon-solve-pack/) · [Stable v0.1.0 release](https://github.com/Nicholas-afk/hitcon-solve-pack/releases/tag/v0.1.0)
+
 Capture a trusted local Python solve, replay it when provenance matches, and review saved evidence in a browser. Exact output bytes, file hashes, runtime, command and before/after snapshots persist as private immutable records. Manual receipts remain separate history. Reproduction never establishes organizer acceptance.
 
 HITCON CTF 2026 scores accepted challenge flags. This is a preparation tool. Registration, competitive AI/tool permission and the actual submission interface remain unresolved. No organizer or mandatory sponsor integration is invented.
 
 ## Complete practice journey
+
+Clone the [public repository](https://github.com/Nicholas-afk/hitcon-solve-pack), or download the v0.1.0 release archive and extract it. In a terminal, enter the repository directory. No pip installation or environment variables are required.
+
+```sh
+git clone https://github.com/Nicholas-afk/hitcon-solve-pack.git
+cd hitcon-solve-pack
+git checkout v0.1.0
+```
 
 Target: Python 3.11+ on POSIX. Tested: Python 3.14.3/macOS ARM64; Node 22.18.0 for checks. No installed dependencies. From this package:
 
@@ -71,7 +81,7 @@ Synthetic-only static preview:
 python3 -m http.server 8973 --bind 127.0.0.1 --directory docs
 ```
 
-`docs/` supports GitHub Pages project subpaths under `nicholas-afk`. Static imports accept only explicitly synthetic reports ≤2 MiB. Pages cannot run Python or protect secrets. No public repository/deployment exists. Keep live/private records and the surrounding entrant record out of public trees. No external assets, analytics, uploads or persistent browser storage. Imported content renders as text; hashes establish consistency, not authenticated authorship.
+`docs/` supports GitHub Pages project subpaths under `nicholas-afk`. Static imports accept only explicitly synthetic reports ≤2 MiB. Pages hosts the public synthetic demo; real capture/replay/private review run locally. Pages cannot run Python or protect secrets. Keep live/private records and the surrounding entrant record out of public trees. No external assets, analytics, uploads or persistent browser storage. Imported content renders as text; hashes establish consistency, not authenticated authorship.
 
 ## Verification
 
@@ -81,3 +91,7 @@ python3 -m solvepack.demo_report
 ```
 
 Checks cover processing, binary/literal execution, real virtual-environment package execution, limits/cleanup, before/after drift, persistence/tamper/atomic failures, receipt integrity, private HTTP boundaries, browser verification and actual event handlers. Desktop/mobile/320px inspections supplement them. Two selected HITCON 2022 crypto problems were reproduced privately using consulted author methods; automated checks preserved their output through capture/replay. This is guided historical reproduction, not blind solving, entrant performance or official acceptance. Other runtimes, full accessibility, human speed and competitive throughput remain unverified. Use `QUEUE_TEMPLATE.md` for honest timed evaluation. Rebuilding the public report updates observed synthetic times, not real contest evidence.
+
+## Release documentation
+
+[Architecture and data boundaries](ARCHITECTURE.md), [free hosting and restore](DEPLOYMENT.md), [attribution](ATTRIBUTION.md) and [release notes](RELEASE_NOTES.md) describe the completed capabilities and known limits. This repository's source, own icon and synthetic fixtures are [MIT licensed](LICENSE). No private evidence, historical challenge source/data or personal entrant record is distributed.
